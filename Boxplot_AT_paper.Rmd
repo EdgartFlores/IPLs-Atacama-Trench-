@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Boxplot"
 author: "Edgart Flores"
 date: "8/8/2020"
 output: html_document
@@ -13,7 +13,6 @@ library(latex2exp)
 library(readxl)
 library(here) 
 library(broom)
-library(ggplot2)
 library(RColorBrewer)
 library(scales)
 library(reshape2)
@@ -23,7 +22,6 @@ library(ggdendro)
 library(graphics)
 library(vegan)
 library(pvclust)
-library(cluster)
 library(factoextra)
 library(magrittr)
 library(janitor)
@@ -37,20 +35,14 @@ library(ggpubr)
 
 ```{r }
 require(ggplot2)
-require(reshape2)
-library(cowplot)
-library(gridExtra)
-library(dplyr) 
 library(devtools)
 library(ggpmisc)
 library(multcompView)
 library(ggsci)
 ```
 
-# final para carbons
-# df <- subset(df, class == "SQ") probrar esta linea de codigo para corroborar lo sorprendente de SQ
+# by number of carbons
  
-
 ```{r }
 df <- read.delim("~/Documents/EF_IPL_Processing_new/data_final/07.boxplot_class_sampletype_carbon_relab_by_sampletype.csv", sep=",", header = T)
 df$sampletype_f = factor(df$sampletype, levels=c('omz_water_column','Continental_slope','Inner_trench'))
@@ -111,7 +103,7 @@ p
 
 
 
-# final para bounds
+# its the same by bounds
 ```{r }
 df <- read.delim("05.boxplot_class_sampletype_bound_relab_by_sampletype.csv", sep=",", header = T)
 df$sampletype_f = factor(df$sampletype, levels=c('omz_water_column','Continental_slope','Inner_trench'))

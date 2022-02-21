@@ -223,12 +223,6 @@ ano
  
  
  
- ---
-title: "NMDS Project"
-author: "Edgart Flores"
-date: "8/4/2020"
-output: html_document
----
 
 
 ```{r, message=FALSE}

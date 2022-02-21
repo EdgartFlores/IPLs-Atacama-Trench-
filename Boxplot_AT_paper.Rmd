@@ -1,0 +1,175 @@
+---
+title: "Untitled"
+author: "Edgart Flores"
+date: "8/8/2020"
+output: html_document
+---
+```{r setup, include=FALSE}
+library(dplyr)
+library(gridExtra)
+library(readr)
+library(tidyverse)
+library(latex2exp)
+library(readxl)
+library(here) 
+library(broom)
+library(ggplot2)
+library(RColorBrewer)
+library(scales)
+library(reshape2)
+library(dendextend)
+library(cowplot)
+library(ggdendro)
+library(graphics)
+library(vegan)
+library(pvclust)
+library(cluster)
+library(factoextra)
+library(magrittr)
+library(janitor)
+library(ade4) 
+#library(adespatial) 
+library(gclus) 
+library(cluster) 
+library(FD)
+library(ggpubr)
+``` 
+
+```{r }
+require(ggplot2)
+require(reshape2)
+library(cowplot)
+library(gridExtra)
+library(dplyr) 
+library(devtools)
+library(ggpmisc)
+library(multcompView)
+library(ggsci)
+```
+
+# final para carbons
+# df <- subset(df, class == "SQ") probrar esta linea de codigo para corroborar lo sorprendente de SQ
+ 
+
+```{r }
+df <- read.delim("~/Documents/EF_IPL_Processing_new/data_final/07.boxplot_class_sampletype_carbon_relab_by_sampletype.csv", sep=",", header = T)
+df$sampletype_f = factor(df$sampletype, levels=c('omz_water_column','Continental_slope','Inner_trench'))
+data <- data.frame(df)
+
+str(data)
+
+str(data)
+#function 
+generate_label_df <- function(TUKEY, variable){
+
+  # Extract labels and factor levels from Tukey post-hoc 
+  Tukey.levels <- variable[,4]
+  Tukey.labels <- data.frame(multcompLetters(Tukey.levels)['Letters'])
+
+  #I need to put the labels in the same order as in the boxplot :
+  Tukey.labels$treatment=rownames(Tukey.labels)
+  Tukey.labels=Tukey.labels[order(Tukey.labels$treatment) , ]
+  return(Tukey.labels)
+}
+
+#---------------------------------------------------------
+
+p <- ggplot(df, aes(x=class, y=bounds, group=class)) + 
+  facet_grid(~sampletype, scales = "free_x", space = "free_x" ) +
+  geom_boxplot(aes(fill=class)) +
+    stat_summary(fun.y=mean, geom="point", shape=20, size=1, color="black", fill="black") + 
+   ylim(c(22, 43)) + 
+    scale_fill_brewer(palette = "RdBu") + 
+  labs(fill = "Class") +
+  xlab("Class of IPLs") + ylab("Acyl carbon atoms") + 
+  theme(axis.text.x = element_text(angle = 45))
+p
+#---------------------------------------------------------
+for (facetk in as.character(unique(data$sampletype))) {   
+  subdf <- subset(data, sampletype==facetk)
+  model=lm(bounds ~ class, data=subdf)
+  ANOVA=aov(model)
+  TUKEY <- TukeyHSD(ANOVA)
+  labels <- generate_label_df(TUKEY, TUKEY$class)
+
+  names(labels) <- c('Letters','data$class')
+  yvalue <- aggregate(subdf$bounds, list(subdf$class), data=subdf, quantile, probs=.75)  
+
+  final <- data.frame(labels, yvalue[,2])
+
+  names(final)<-c("letters","class","bounds")
+  final$sampletype <-  facetk
+
+  p <- p + geom_text(data = final,  aes(x=class, y=bounds, fill=class,label=letters),
+                     vjust=-1.5, hjust=-.5)
+}
+p
+
+```
+
+
+
+
+
+# final para bounds
+```{r }
+df <- read.delim("05.boxplot_class_sampletype_bound_relab_by_sampletype.csv", sep=",", header = T)
+df$sampletype_f = factor(df$sampletype, levels=c('omz_water_column','Continental_slope','Inner_trench'))
+data <- data.frame(df)
+
+str(data)
+#function 
+generate_label_df <- function(TUKEY, variable){
+
+  # Extract labels and factor levels from Tukey post-hoc 
+  Tukey.levels <- variable[,4]
+  Tukey.labels <- data.frame(multcompLetters(Tukey.levels)['Letters'])
+
+  #I need to put the labels in the same order as in the boxplot :
+  Tukey.labels$treatment=rownames(Tukey.labels)
+  Tukey.labels=Tukey.labels[order(Tukey.labels$treatment) , ]
+  return(Tukey.labels)
+}
+
+#---------------------------------------------------------
+a <- ggplot(df, aes(x=class, y=bounds, group=class)) + 
+  facet_grid(~sampletype, scales = "free_x", space = "free_x" ) +
+  geom_boxplot(aes(fill=class)) +
+    stat_summary(fun.y=mean, geom="point", shape=20, size=1, color="black", fill="black") +  
+   ylim(c(0, 6.5)) + 
+    scale_fill_brewer(palette = "RdBu") + 
+  labs(fill = "Class") +
+  xlab("Class of IPLs") + ylab("Acyl double bound") + 
+  theme(axis.text.x = element_text(angle = 45))
+a
+#---------------------------------------------------------
+for (facetk in as.character(unique(data$sampletype))) {   
+  subdf <- subset(data, sampletype==facetk)
+  model=lm(bounds ~ class, data=subdf)
+  ANOVA=aov(model)
+  TUKEY <- TukeyHSD(ANOVA)
+  labels <- generate_label_df(TUKEY, TUKEY$class)
+
+  names(labels) <- c('Letters','data$class')
+  yvalue <- aggregate(subdf$bounds, list(subdf$class), data=subdf, quantile, probs=.75)  
+
+  final <- data.frame(labels, yvalue[,2])
+
+  names(final)<-c("letters","class","bounds")
+  final$sampletype <-  facetk
+
+  a <- a + geom_text(data = final,  aes(x=class, y=bounds, fill=class,label=letters),
+                     vjust=-1.5, hjust=-.5)
+}
+a
+
+```
+
+
+```{r cars}
+figure_boxplots <- ggarrange (p,a, 
+                     labels = c("A","B"),
+                     ncol = 1, nrow = 2)
+figure_boxplots
+
+```

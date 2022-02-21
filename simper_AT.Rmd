@@ -1,0 +1,75 @@
+---
+title: "Untitled"
+author: "Edgart Flores"
+date: "10/6/2020"
+output: html_document
+---
+ 
+```{r setup, include=FALSE}
+library("vegan")
+library("tidyverse")
+library(permute)
+```
+
+
+```{r setup, include=FALSE}
+### Interface to the permute package
+
+### input can be (1) a single number giving the number of
+### permutations, (2) a how() structure for control parameter in
+### permute::shuffleSet, or (3) a permutation matrix which is returned
+### as is. In addition, there can be a 'strata' argument which will
+### modify case (1). The number of shuffled items must be given in 'N'.
+
+`getPermuteMatrix` <-
+    function(perm, N,  strata = NULL)
+{
+    ## 'perm' is either a single number, a how() structure or a
+    ## permutation matrix
+    if (length(perm) == 1) {
+        perm <- how(nperm = perm)
+    }
+    ## apply 'strata', but only if possible: ignore silently other cases
+    if (!missing(strata) && !is.null(strata)) {
+        if (inherits(perm, "how") && is.null(getBlocks(perm)))
+            setBlocks(perm) <- strata
+    }
+    ## now 'perm' is either a how() or a matrix
+    if (inherits(perm, "how"))
+        perm <- shuffleSet(N, control = perm)
+    else { # matrix: check that it *strictly* integer
+        if(!is.integer(perm) && !all(perm == round(perm)))
+           stop("permutation matrix must be strictly integers: use round()")
+    }
+    ## now 'perm' is a matrix (or always was). If it is a plain
+    ## matrix, set minimal attributes for printing. This is a dirty
+    ## kluge: should be handled more cleanly.
+    if (is.null(attr(perm, "control")))
+        attr(perm, "control") <-
+            structure(list(within=list(type="supplied matrix"),
+                           nperm = nrow(perm)), class = "how")
+    perm
+}
+```
+
+
+```{r cars}
+data = read_csv("~/Documents/EF_IPL_Processing_new/data_final/10.simper_input_relab.csv")
+sim <- simper(data[,3:325], data$typeset, permutations = 10000)
+sim
+simsum<-summary(sim)
+```
+
+```{r cars}
+data_all = read_csv("~/Documents/EF_IPL_Processing_new/data_final/SIMPER/13.simper_by_clusters_relab_by_id.csv")
+sim <- simper(data_all[,3:325], data_all$typeset, permutations = 10000)
+sim
+simsum<-summary(sim)
+```
+
+```{r cars}
+data_sed = read_csv("~/Documents/EF_IPL_Processing_new/data_final/SIMPER/14.simper_by_sediment_clusters_relab_by_id.csv")
+sim <- simper(data_sed [,3:325], data_sed$typeset, permutations = 10000)
+sim
+simsum<-summary(sim)
+```

@@ -1,0 +1,2079 @@
+---
+title: "my_project"
+author: "Edgart Flores"
+date: "7/17/2020"
+output: html_document
+---
+```{r setup, include=FALSE}
+library(dplyr)
+library(gridExtra)
+library(readr)
+library(tidyverse)
+library(latex2exp)
+library(readxl)
+library(here) 
+library(broom)
+library(ggplot2)
+library(RColorBrewer)
+library(scales)
+library(reshape2)
+library(dendextend)
+library(cowplot)
+library(ggdendro)
+library(graphics)
+library(vegan)
+library(pvclust)
+library(cluster)
+library(factoextra)
+library(magrittr)
+library(janitor)
+library(ade4) 
+#library(adespatial) 
+library(gclus) 
+library(cluster) 
+library(FD)
+library(ggpubr)
+library("viridis")
+library(wesanderson)
+require(pals)
+library(wesanderson)
+library(wesanderson)
+require(pals)
+require(reshape2)
+require(ochRe) #package ‘ochRe’ is not available (for R version 4.0.2)
+library(wesanderson)
+library(scico)
+``` 
+
+```{r, message=FALSE}
+final_corrected<- read.csv("~/Documents/EF_IPL_Processing_new/data_final/01.omz_slope_trench_id_class_compound_relab_by_id_and_class.csv")
+```
+
+# remove el id 03-R1 o el row que quieras
+```{r, message=FALSE}
+final_corrected <- subset(final_corrected,  ! paste(ID,sep="_") %in% c("3_01R") )
+final_corrected <- subset(final_corrected,  ! paste(ID,sep="_") %in% c("NA") )
+```
+
+# add a new column : SampleType
+```{r, message=FALSE}
+# final_corrected <- final_corrected %>% 
+#   mutate(SampleType =
+#            case_when(grepl("03_01", ID) ~ "Inner trench",
+#                      grepl("04_01", ID) ~ "Inner trench",
+#                      grepl("08_01", ID) ~ "Inner trench",
+#                      grepl("03_12", ID) ~ "Inner trench",
+#                      grepl("04_12", ID) ~ "Inner trench",
+#                      grepl("08_12", ID) ~ "Inner trench",
+#                      grepl("03_23", ID) ~ "Inner trench",
+#                      grepl("04_23", ID) ~ "Inner trench",
+#                      grepl("08_23", ID) ~ "Inner trench",
+#                      grepl("3_01R", ID) ~ "Inner trench",
+#                      grepl("_22_2", ID) ~ "Continental slope",
+#                      grepl("_12_2", ID) ~ "Continental slope",
+#                      grepl("_11_4", ID) ~ "Continental slope",
+#                      grepl("_08_2", ID) ~ "Continental slope",
+#                      grepl("_07_4", ID) ~ "Continental slope",
+#                      grepl("_05_2", ID) ~ "Continental slope",
+#                      grepl("_04_4", ID) ~ "Continental slope"))
+```
+
+# add a new column : SampleType2
+```{r, message=FALSE}
+# final_corrected <- final_corrected  %>%
+#   mutate(SampleType2 =
+#            case_when(grepl("03_01", ID) ~ "0-1 (cmbsf)",
+#                      grepl("04_01", ID) ~ "0-1 (cmbsf)",
+#                      grepl("08_01", ID) ~ "0-1 (cmbsf)",
+#                      grepl("03_12", ID) ~ "1-2 (cmbsf)",
+#                      grepl("04_12", ID) ~ "1-2 (cmbsf)",
+#                      grepl("08_12", ID) ~ "1-2 (cmbsf)",
+#                      grepl("03_23", ID) ~ "2-3 (cmbsf)",
+#                      grepl("04_23", ID) ~ "2-3 (cmbsf)",
+#                      grepl("08_23", ID) ~ "2-3 (cmbsf)",
+#                      #grepl("3_01R", ID) ~ "surficial sediments",
+#                      grepl("_22_2", ID) ~ "surficial sediments",
+#                      grepl("_12_2", ID) ~ "surficial sediments",
+#                      grepl("_11_4", ID) ~ "surficial sediments",
+#                      grepl("_08_2", ID) ~ "surficial sediments",
+#                      grepl("_07_4", ID) ~ "surficial sediments",
+#                      grepl("_05_2", ID) ~ "surficial sediments",
+#                      grepl("_04_4", ID) ~ "surficial sediments"))
+```
+
+```{r, message=FALSE}
+# final_corrected <- final_corrected  %>%
+#   mutate(id =
+#            case_when(grepl("03_01", ID) ~ "H3 (7890 m)",
+#                      grepl("04_01", ID) ~ "H4 (8063 m)",
+#                      grepl("08_01", ID) ~ "H8 (7734 m)",
+#                      grepl("03_12", ID) ~ "B08 (539 m)",
+#                      grepl("04_12", ID) ~ "H4_12",
+#                      grepl("08_12", ID) ~ "H8_12",
+#                      grepl("03_23", ID) ~ "H3_23",
+#                      grepl("04_23", ID) ~ "H4_23",
+#                      grepl("08_23", ID) ~ "H8_23",
+#                      #grepl("3_01R", id) ~ "surficial sediments",
+#                      grepl("_22_2", ID) ~ "B22 (545 m)",
+#                      grepl("_12_2", ID) ~ "B12 (529 m)",
+#                      grepl("_11_4", ID) ~ "B11 (1113 m)",
+#                      grepl("_08_2", ID) ~ "B04 (1200 m)",
+#                      grepl("_07_4", ID) ~ "B07 (920 m)",
+#                      grepl("_05_2", ID) ~ "B05 (957 m)",
+#                      grepl("_04_4", ID) ~ "B04 (1200 m)"))
+```
+
+# first separte by diferent Class (see column class)
+```{r, message=FALSE}
+# BETAINE LIPIDS--> HERE there is 3 DGTS,DGTA,DGCC
+#BL <- subset(final_corrected, Class == "BL") 
+
+DGTS <- subset(final_corrected, class == "DGTS") 
+DGTA <- subset(final_corrected, class == "DGTA")
+DGCC <- subset(final_corrected, class == "DGCC") 
+
+#GLICOLIPIDS
+MGDG <- subset(final_corrected, class == "MGDG")
+DGDG <- subset(final_corrected, class == "DGDG")
+SQDG <- subset(final_corrected, class == "SQ")
+
+#Phospholipids
+PC <- subset(final_corrected, class == "PC")
+PE <- subset(final_corrected, class == "PE")
+PG <- subset(final_corrected, class == "PG")
+
+# Aditinally
+PME_PDME <- subset(final_corrected, class == "PME/PDME")
+GDGT <- subset(final_corrected, class == "GDGT")
+Other <- subset(final_corrected, class == "Other")
+
+# sin GDGT
+#todos <- subset(final_corrected, class %in% c("BL","MGDG","DGDG","SQ","PC","PE","PG","PME/PDME","Other"))
+
+
+#AT <- subset (final_corrected, SampleType == "Inner trench")
+#slope <- subset (final_corrected, SampleType == "Continental slope")
+
+```
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#                                                            BETAINE LIPIDS 
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#                                            DGTS (Diacyl-glyceryl-trimetil-homoserine) 
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+```{r, message=FALSE}
+# ORDEN DE ACUERDO A LA PROFUNDIDAD
+DGTS$ID <- factor(DGTS$ID, levels = c(
+"Lower_Oxy_T3_2.7_25m",
+"Chl_Max_T3_2.7_9m",
+"Upper_Oxy_T5_2.7_35m",
+"Upper_Oxy_T5_0.3_35m",
+"Chl_Max_T3_0.3_9m",
+"Chl_Max_T5_2.7_28m",
+"Upper_OMZ_T5_0.3_60m",
+"Lower_Oxy_T5_0.3_45m",
+"Upper_OMZ_T5_2.7_60m",
+"Lower_Oxy_T5_2.7_45m",
+"Lower_Oxy_T3_0.3_25m",
+"Upper_Oxy_T3_0.3_14m",
+"Chl_Max_T5_0.3_28m",
+"Bathyal_Sed_B22_545m",
+"Bathyal_Sed_B05_957m",
+"Bathyal_Sed_B07_920m",
+"Bathyal_Sed_B08_539m",
+"Hadal_Sed_H4_0_1cm_8063m",
+"Bathyal_Sed_B11_1113m",
+"Bathyal_Sed_B12_529m",
+"Upper_Oxy_T3_2.7_14m",
+"Hadal_Sed_H3_1_2cm_7890m",
+"Hadal_Sed_H3_0_1cm_7890m",
+"Hadal_Sed_H3_2_3cm_7890m",
+"Bathyal_Sed_B04_1200m",
+"Hadal_Sed_H8_0_1cm_7734m",
+"Hadal_Sed_H8_2_3cm_7734m",
+"Hadal_Sed_H4_2_3cm_8063m",
+"Hadal_Sed_H4_1_2cm_8063m",
+"Hadal_Sed_H8_1_2cm_7734m",
+"Upper_OMZ_T3_2.7_55m",
+"Mesopelagic_T3_2.7_750m",
+"Mesopelagic_T5_2.7_750m",
+"Core_OMZ_T3_2.7_250m",
+"Mesopelagic_T3_0.3_750m",
+"Upper_OMZ_T3_0.3_55m",
+"Core_OMZ_T5_0.3_250m",
+"Core_OMZ_T5_2.7_250m",
+"Core_OMZ_T3_0.3_250m",
+"Mesopelagic_T5_0.3_750m"
+)
+)
+
+# Esta funcion es la que trabaja el color
+#cols <- colorRampPalette(brewer.pal(12, #"Accent"/"Dark2"/"Paired"/"RdBu"/"RdYlBu"/"Spectral")) # se puede usar en otro grupo
+
+cols <- colorRampPalette(brewer.pal(12, "Spectral"))
+myPal <- cols(length(unique(DGTS$compound)))
+
+p <- ggplot(data=DGTS, aes(x=relab, y=ID, fill=compound)) 
+g <- p + geom_bar(aes(y=ID), stat="identity", position= "stack") +  
+  #facet_wrap(~SampleType + SampleType2, scales = "free_y", nrow = 4, strip.position = "right") +
+  #facet_grid(SampleType + SampleType2~. , scales = "free_y", space = "free_y") + 
+  theme_bw() +
+  #scale_fill_brewer( type = "div" , palette = "RdYlBu" ) +
+  scale_fill_manual(values = myPal) +
+
+#  scale_fill_manual(values = c("brown1", "darkgoldenrod1", "darkseagreen", "darkorchid", "darkolivegreen1", "darkorange1", "darkgrey", "darkblue", "brown1", #"lightskyblue", "darkgreen", "deeppink", "khaki2", "firebrick", "darkorange1", "royalblue4", "darksalmon", "cyan1", "royalblue4", "dodgerblue3", "#CBD588", #"#5F7FC7", "orange","#DA5724", "#508578", "#CD9BCD", "#AD6F3B", "#673770", "#D14285", "#652926", "#C84248", "#8569D5", "#5E738F","#D1A33D", "#8A7C64", #"#599861", "steelblue1", "royalblue4", "darkblue","steelblue1", "#CBD588", "#5F7FC7", "orange","#DA5724",  "#CD9BCD", "#AD6F3B", "#673770"))
+
+  xlab("Relative abundance") + ylab(" ") +
+  theme(legend.title = element_blank(), legend.position = "right") + 
+   theme(legend.key.height = unit(0.1, "mm"))  +
+   theme(legend.key.width  = unit(3.7, "mm"))  +
+   theme(legend.key.size  = unit(0.1, "mm"))  +
+   theme(legend.title = element_text(size = 5), 
+               legend.text = element_text(size = 6.3)) +
+    guides(fill=guide_legend(ncol = 1))  
+g
+```
+
+
+```{r cars}
+DGTS <- subset(final_corrected, class == "DGTS")
+
+# NECESITO SOLO ID, compound y relab
+DGTS <- select(DGTS, ID, compound, relab) 
+DGTS <- dcast(DGTS, ID ~ compound, value.var = c("relab"))
+DGTS <- data.frame(DGTS[,-1], row.names=DGTS[,1])
+
+DGTS[is.na(DGTS)] <- 0 # transformar todos los NA en zeros
+
+# Compute distances and hierarchical clustering
+library(factoextra)
+# metodo elegido
+dd<- vegdist(DGTS, method = "bray")
+hc <- hclust(dd, method =  "average")
+#otros métodos
+# dd <- dist(scale(DGTS), method = "euclidean")
+# hc <- hclust(dd, method = "ward.D2")
+#hc1 <- hclust(as.dist(DGTS), method = "average")
+#coph1 <- cor(cophenetic(hc1), as.dist(DGTS))
+
+t <- fviz_dend(hc, k = 4,            # Cut in four groups
+          cex = 0.8,  # label size
+          horiz = TRUE,               
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect_lty=1,
+          #labels_track_height = 1,
+          xlab = "",
+          ylab = "Similarity",
+          #rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          lower_rect = 0.6,
+          ggtheme = theme_classic()
+          ) + scale_x_reverse()
+t
+```
+# extraer una tabla
+```{r cars}
+#write.csv(DGTS, file="DGTS.csv")
+```
+
+
+```{r cars}
+# figure_DGTS <- ggarrange (t,g, 
+#                     labels = c("A","B"),
+#                     ncol = 2, nrow = 1)
+# figure_DGTS
+
+library("cowplot")
+figure_DGTS <- ggdraw() +
+  draw_plot(t, x = 0, y = 0, width = 0.35, height = 1) +
+  draw_plot(g, x = 0.37, y = 0, width = 0.66, height = 0.97) +
+  draw_plot_label(label = c("A", "B"), size = 8,
+                  x = c(0, 0.5), y = c(1, 1))
+figure_DGTS
+```
+
+# nuevo procesamiento de acuerdo a los nuevos cluster 
+
+```{r cars}
+DGTS <- subset(final_corrected, class == "DGTS")
+
+# NECESITO SOLO ID, compound y relab
+DGTS <- select(DGTS, ID, compound, relab) 
+DGTS <- dcast(DGTS, ID ~ compound, value.var = c("relab"))
+DGTS <- data.frame(DGTS[,-1], row.names=DGTS[,1])
+
+DGTS[is.na(DGTS)] <- 0 # transformar todos los NA en zeros
+```
+
+
+```{r cars}
+Approximately_Unbiased <- data.frame(t(DGTS))
+```
+
+```{r cars}
+# Se generan solo 100 pseudo-muestras para agilizar el proceso, pero para casos
+# reales los autores no recomiendan bajar de 10000
+boot_hc_cluster <- pvclust(data = Approximately_Unbiased, method.dist = "euclidea",
+                           method.hclust = "average",
+                           nboot = 10, quiet = TRUE)
+# Al representar un objeto pvclust se obtiene el dendrograma con los valores de
+# AU-pvalue en rojo y BP-values en verde
+plot(boot_hc_cluster, cex = 0.8, print.num = FALSE, cex.pv = 0.8)
+
+# Con la función pvrect() se encuadran aquellos clusters significativos para una
+# confianza del 95%.
+pvrect(x = boot_hc_cluster, alpha = 0.95, pv = "au")
+```
+
+
+
+
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+#                                           DGTA (Diacyl-glyceryl-hidroxymethyl-trimethyl-b-alanine)
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+```{r, message=FALSE}
+DGTA$ID <- factor(DGTA$ID, levels = c(
+"Bathyal_Sed_B12_529m",
+"Bathyal_Sed_B08_539m",
+"Bathyal_Sed_B05_957m",
+"Bathyal_Sed_B22_545m",
+"Hadal_Sed_H4_0_1cm_8063m",
+"Bathyal_Sed_B07_920m",
+"Bathyal_Sed_B11_1113m",
+"Hadal_Sed_H8_2_3cm_7734m",
+"Hadal_Sed_H3_2_3cm_7890m",
+"Bathyal_Sed_B04_1200m",
+"Hadal_Sed_H8_0_1cm_7734m",
+"Hadal_Sed_H3_0_1cm_7890m",
+"Hadal_Sed_H3_1_2cm_7890m",
+"Hadal_Sed_H4_2_3cm_8063m",
+"Hadal_Sed_H4_1_2cm_8063m",
+"Upper_Oxy_T3_2.7_14m",
+"Lower_Oxy_T5_2.7_45m",
+"Lower_Oxy_T3_2.7_25m",
+"Lower_Oxy_T5_0.3_45m",
+"Lower_Oxy_T3_0.3_25m",
+"Upper_Oxy_T5_2.7_35m",
+"Upper_Oxy_T5_0.3_35m",
+"Upper_OMZ_T5_2.7_60m",
+"Mesopelagic_T5_2.7_750m",
+"Chl_Max_T5_0.3_28m",
+"Chl_Max_T3_2.7_9m",
+"Chl_Max_T3_0.3_9m",
+"Upper_OMZ_T5_0.3_60m",
+"Hadal_Sed_H8_1_2cm_7734m",
+"Upper_Oxy_T3_0.3_14m",
+"Upper_OMZ_T3_0.3_55m",
+"Core_OMZ_T3_2.7_250m",
+"Upper_OMZ_T3_2.7_55m",
+"Core_OMZ_T5_0.3_250m",
+"Core_OMZ_T3_0.3_250m",
+"Mesopelagic_T3_2.7_750m",
+"Core_OMZ_T5_2.7_250m",
+"Mesopelagic_T5_0.3_750m",
+"Mesopelagic_T3_0.3_750m",
+"Chl_Max_T5_2.7_28m"
+)
+)
+
+# Esta funcion es la que trabaja el color
+#cols <- colorRampPalette(brewer.pal(12, #"Accent"/"Dark2"/"Paired"/"RdBu"/"RdYlBu"/"Spectral")) # se puede usar en otro grupo
+
+#cols <- colorRampPalette(brewer.pal(12, "BuPu"))
+#myPal <- cols(length(unique(DGTS$compound)))
+pal <- wes_palette(27, name = "Zissou1", type = "continuous")
+
+
+p <- ggplot(data=DGTA, aes(x=relab, y=ID, fill=compound))
+g <- p + geom_bar(aes(y=ID), stat="identity", position= "stack") + 
+  #facet_wrap(~SampleType + SampleType2, scales = "free_y", nrow = 4, strip.position = "right") +
+  #facet_grid(SampleType + SampleType2~. , scales = "free_y", space = "free_y") + 
+  theme_bw() +
+  #scale_fill_manual(values = myPal) +
+   scale_fill_manual(values = pal) +
+  
+  xlab("Relative abundance") + ylab(" ") +
+  theme(legend.title = element_blank(), legend.position = "right") + 
+   theme(legend.key.height = unit(0.1, "mm"))  +
+   theme(legend.key.width  = unit(3.7, "mm"))  +
+   theme(legend.key.size  = unit(0.1, "mm"))  +
+   theme(legend.title = element_text(size = 9), 
+               legend.text = element_text(size = 7.7)) +
+   guides(fill=guide_legend(ncol =1)) 
+g
+```
+
+```{r cars}
+DGTA <- subset(final_corrected, class == "DGTA")
+
+# NECESITO SOLO ID, compound y relab
+DGTA <- select(DGTA, ID, compound, relab) 
+DGTA <- dcast(DGTA, ID ~ compound, value.var = c("relab"))
+DGTA <- data.frame(DGTA[,-1], row.names=DGTA[,1])
+
+DGTA[is.na(DGTA)] <- 0 # transformar todos los NA en zeros
+
+# Compute distances and hierarchical clustering
+library(factoextra)
+# metodo elegido
+dd<- vegdist(DGTA, method = "bray")
+hc <- hclust(dd, method =  "average")
+
+t <- fviz_dend(hc, k = 4,            # Cut in four groups
+          cex = 0.8,  # label size
+          horiz = TRUE,               
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect_lty=1,
+          #labels_track_height = 1,
+          xlab = "",
+          ylab = "Similarity",
+          #rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          lower_rect = 0.6,
+          ggtheme = theme_classic()
+          ) + scale_x_reverse()
+t
+```
+
+```{r cars}
+# figure_DGTA <- ggarrange (t,g,
+#                     labels = c("A","B"),
+#                     ncol = 2, nrow = 1, align = "h")
+# figure_DGTA
+
+library("cowplot")
+figure_DGTA <- ggdraw() +
+  draw_plot(t, x = 0, y = 0, width = 0.35, height = 1) +
+  draw_plot(g, x = 0.37, y = 0, width = 0.65, height = 0.97) +
+  draw_plot_label(label = c("A", "B"), size = 8,
+                  x = c(0, 0.5), y = c(1, 1))
+figure_DGTA
+```
+
+
+
+# cluster with boostrop
+
+```{r cars}
+DGTA <- subset(final_corrected, class == "DGTA")
+
+# NECESITO SOLO ID, compound y relab
+DGTA <- select(DGTA, ID, compound, relab) 
+DGTA <- dcast(DGTA, ID ~ compound, value.var = c("relab"))
+DGTA <- data.frame(DGTA[,-1], row.names=DGTA[,1])
+
+DGTA[is.na(DGTA)] <- 0 # transformar todos los NA en zeros
+```
+
+
+```{r cars}
+Approximately_Unbiased <- data.frame(t(DGTA))
+```
+
+```{r cars}
+# Se generan solo 100 pseudo-muestras para agilizar el proceso, pero para casos
+# reales los autores no recomiendan bajar de 10000
+boot_hc_cluster <- pvclust(data = Approximately_Unbiased, method.dist = "euclidea",
+                           method.hclust = "average",
+                           nboot = 10, quiet = TRUE)
+# Al representar un objeto pvclust se obtiene el dendrograma con los valores de
+# AU-pvalue en rojo y BP-values en verde
+plot(boot_hc_cluster, cex = 0.8, print.num = FALSE, cex.pv = 0.8)
+
+# Con la función pvrect() se encuadran aquellos clusters significativos para una
+# confianza del 95%.
+pvrect(x = boot_hc_cluster, alpha = 0.95, pv = "au")
+```
+
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+#                                           DGCC (Diacyl-glyceryl-carboxy-hydroxy-cholin)
+#---------------------------------------------------------------------------------------------------------------------------------------------------------
+```{r, message=FALSE}
+DGCC$ID <- factor(DGCC$ID, levels = c(
+"Chl_Max_T5_0.3_28m",
+"Chl_Max_T3_0.3_9m",
+"Bathyal_Sed_B12_529m",
+"Bathyal_Sed_B11_1113m",
+"Hadal_Sed_H8_0_1cm_7734m",
+"Hadal_Sed_H8_1_2cm_7734m",
+"Hadal_Sed_H4_2_3cm_8063m",
+"Hadal_Sed_H3_1_2cm_7890m",
+"Hadal_Sed_H8_2_3cm_7734m",
+"Bathyal_Sed_B05_957m",
+"Upper_Oxy_T3_2.7_14m",
+"Chl_Max_T5_2.7_28m",
+"Upper_Oxy_T5_2.7_35m",
+"Chl_Max_T3_2.7_9m",
+"Lower_Oxy_T5_2.7_45m",
+"Lower_Oxy_T3_2.7_25m",
+"Core_OMZ_T5_2.7_250m",
+"Core_OMZ_T3_2.7_250m",
+"Upper_OMZ_T3_2.7_55m",
+"Upper_Oxy_T3_0.3_14m",
+"Upper_Oxy_T5_0.3_35m",
+"Lower_Oxy_T5_0.3_45m",
+"Lower_Oxy_T3_0.3_25m",
+"Core_OMZ_T5_0.3_250m",
+"Core_OMZ_T3_0.3_250m",
+"Upper_OMZ_T3_0.3_55m",
+"Upper_OMZ_T5_2.7_60m",
+"Mesopelagic_T5_2.7_750m",
+"Mesopelagic_T3_2.7_750m",
+"Upper_OMZ_T5_0.3_60m",
+"Mesopelagic_T5_0.3_750m",
+"Mesopelagic_T3_0.3_750m",
+"Hadal_Sed_H3_2_3cm_7890m",
+"Bathyal_Sed_B04_1200m",
+"Bathyal_Sed_B08_539m",
+"Bathyal_Sed_B07_920m",
+"Hadal_Sed_H4_0_1cm_8063m",
+"Bathyal_Sed_B22_545m",
+"Hadal_Sed_H4_1_2cm_8063m",
+"Hadal_Sed_H3_0_1cm_7890m"
+)
+)
+
+
+
+# Esta funcion es la que trabaja el color
+#cols <- colorRampPalette(brewer.pal(12, #"Accent"/"Dark2"/"Paired"/"RdBu"/"RdYlBu"/"Spectral")) # se puede usar en otro grupo
+
+cols <- colorRampPalette(brewer.pal(12, "Spectral"))
+myPal <- cols(length(unique(DGCC$compound)))
+
+p <- ggplot(data=DGCC, aes(x=relab, y=ID, fill=compound))
+g <- p + geom_bar(aes(y=ID), stat="identity", position= "stack") + 
+  theme_bw() +
+  scale_fill_manual(values = myPal) +
+  
+  xlab("Relative abundance") + ylab(" ") +
+  theme(legend.title = element_blank(), legend.position = "right") + 
+   theme(legend.key.height = unit(0.1, "mm"))  +
+   theme(legend.key.width  = unit(3.7, "mm"))  +
+   theme(legend.key.size  = unit(0.1, "mm"))  +
+   theme(legend.title = element_text(size = 9), 
+               legend.text = element_text(size = 7.7)) +
+   guides(fill=guide_legend(ncol =1)) 
+
+g
+```
+
+```{r cars}
+DGCC <- subset(final_corrected, class == "DGCC")
+
+# NECESITO SOLO ID, compound y relab
+DGCC <- select(DGCC, ID, compound, relab) 
+DGCC <- dcast(DGCC, ID ~ compound, value.var = c("relab"))
+DGCC <- data.frame(DGCC[,-1], row.names=DGCC[,1])
+
+DGCC[is.na(DGCC)] <- 0 # transformar todos los NA en zeros
+
+# Compute distances and hierarchical clustering
+library(factoextra)
+# metodo elegido
+dd<- vegdist(DGCC, method = "bray")
+hc <- hclust(dd, method =  "average")
+
+t <- fviz_dend(hc, k = 4,            # Cut in four groups
+          cex = 0.8,  # label size
+          horiz = TRUE,               
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect_lty=1,
+          #labels_track_height = 1,
+          xlab = "",
+          ylab = "Similarity",
+          #rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          lower_rect = 0.6,
+          ggtheme = theme_classic()
+          ) + scale_x_reverse()
+t 
+```
+
+```{r cars}
+# figure_DGCC <- ggarrange (t,g,
+#                     labels = c("A","B"),
+#                     ncol = 2, nrow = 1, align = "h")
+# figure_DGCC
+
+library("cowplot")
+figure_DGCC <- ggdraw() +
+  draw_plot(t, x = 0, y = 0, width = 0.35, height = 1) +
+  draw_plot(g, x = 0.37, y = 0, width = 0.66, height = 0.97) +
+  draw_plot_label(label = c("A", "B"), size = 8,
+                  x = c(0, 0.5), y = c(1, 1))
+figure_DGCC
+```
+
+# CLYSTER CON BOOSTRAP
+```{r cars}
+DGCC <- subset(final_corrected, class == "DGCC")
+
+# NECESITO SOLO ID, compound y relab
+DGCC <- select(DGCC, ID, compound, relab) 
+DGCC <- dcast(DGCC, ID ~ compound, value.var = c("relab"))
+DGCC <- data.frame(DGCC[,-1], row.names=DGCC[,1])
+
+DGCC[is.na(DGCC)] <- 0 # transformar todos los NA en zeros
+```
+
+```{r cars}
+Approximately_Unbiased <- data.frame(t(DGCC))
+```
+
+```{r cars}
+# Se generan solo 100 pseudo-muestras para agilizar el proceso, pero para casos
+# reales los autores no recomiendan bajar de 10000
+boot_hc_cluster <- pvclust(data = Approximately_Unbiased, method.dist = "euclidea",
+                           method.hclust = "average",
+                           nboot = 10, quiet = TRUE)
+# Al representar un objeto pvclust se obtiene el dendrograma con los valores de
+# AU-pvalue en rojo y BP-values en verde
+plot(boot_hc_cluster, cex = 0.8, print.num = FALSE, cex.pv = 0.8)
+
+# Con la función pvrect() se encuadran aquellos clusters significativos para una
+# confianza del 95%.
+pvrect(x = boot_hc_cluster, alpha = 0.95, pv = "au")
+```
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#                                                         GLICOLIPIDS 
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#                                            MGDG (mono-glycosyl-diacyl-glycerol) 
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+```{r, message=FALSE}
+MGDG$ID <- factor(MGDG$ID, levels = c(
+"Hadal_Sed_H3_2_3cm_7890m",
+"Hadal_Sed_H3_1_2cm_7890m",
+"Hadal_Sed_H4_1_2cm_8063m",  
+"Bathyal_Sed_B04_1200m",  
+"Hadal_Sed_H4_2_3cm_8063m",
+"Hadal_Sed_H8_0_1cm_7734m",
+"Hadal_Sed_H3_0_1cm_7890m",
+"Hadal_Sed_H8_1_2cm_7734m",
+"Hadal_Sed_H4_0_1cm_8063m",
+"Bathyal_Sed_B12_529m",
+"Bathyal_Sed_B11_1113m",
+"Bathyal_Sed_B08_539m",
+"Bathyal_Sed_B22_545m",
+"Bathyal_Sed_B07_920m",
+"Bathyal_Sed_B05_957m",
+"Hadal_Sed_H8_2_3cm_7734m",
+"Upper_OMZ_T5_2.7_60m",
+"Upper_OMZ_T5_0.3_60m",
+"Mesopelagic_T5_0.3_750m",
+"Mesopelagic_T3_0.3_750m",
+"Mesopelagic_T5_2.7_750m",
+"Mesopelagic_T3_2.7_750m",
+"Upper_Oxy_T3_0.3_14m",
+"Upper_OMZ_T3_0.3_55m",
+"Core_OMZ_T5_2.7_250m",
+"Core_OMZ_T3_0.3_250m",
+"Core_OMZ_T5_0.3_250m",
+"Core_OMZ_T3_2.7_250m",
+"Upper_Oxy_T5_0.3_35m",
+"Lower_Oxy_T5_0.3_45m",
+"Upper_OMZ_T3_2.7_55m",
+"Upper_Oxy_T3_2.7_14m",
+"Lower_Oxy_T3_0.3_25m",
+"Lower_Oxy_T5_2.7_45m",
+"Chl_Max_T3_2.7_9m",
+"Chl_Max_T3_0.3_9m",
+"Upper_Oxy_T5_2.7_35m",
+"Chl_Max_T5_2.7_28m",
+"Lower_Oxy_T3_2.7_25m",
+"Chl_Max_T5_0.3_28m"
+)
+)
+
+# Esta funcion es la que trabaja el color
+#cols <- colorRampPalette(brewer.pal(12, #"Accent"/"Dark2"/"Paired"/"RdBu"/"RdYlBu"/"Spectral")) # se puede usar en otro grupo
+
+cols <- colorRampPalette(brewer.pal(30, "RdBu"))
+myPal <- cols(length(unique(MGDG$compound)))
+
+p <- ggplot(data=MGDG, aes(x=relab, y=ID, fill=compound))
+g <- p + geom_bar(aes(y=ID), stat="identity", position= "stack") + 
+  #facet_wrap(~SampleType + SampleType2, scales = "free_y", nrow = 4, strip.position = "right") +
+  #facet_grid(SampleType + SampleType2~. , scales = "free_y", space = "free_y") + 
+  theme_bw() +
+  scale_fill_manual(values = myPal) +
+  
+  xlab("Relative abundance") + ylab(" ") +
+  theme(legend.title = element_blank(), legend.position = "right") + 
+   theme(legend.key.height = unit(0.1, "mm"))  +
+   theme(legend.key.width  = unit(3.7, "mm"))  +
+   theme(legend.key.size  = unit(0.1, "mm"))  +
+   theme(legend.title = element_text(size = 9), 
+               legend.text = element_text(size = 7.7)) +
+   guides(fill=guide_legend(ncol =1)) 
+g
+```
+
+```{r cars}
+MGDG <- subset(final_corrected, class == "MGDG")
+
+# NECESITO SOLO ID, compound y relab
+MGDG <- select(MGDG, ID, compound, relab) 
+MGDG <- dcast(MGDG, ID ~ compound, value.var = c("relab"))
+MGDG <- data.frame(MGDG[,-1], row.names=MGDG[,1])
+
+MGDG[is.na(MGDG)] <- 0 # transformar todos los NA en zeros
+
+# Compute distances and hierarchical clustering
+library(factoextra)
+# metodo elegido
+dd<- vegdist(MGDG, method = "bray")
+hc <- hclust(dd, method =  "average")
+
+t <- fviz_dend(hc, k = 4,            # Cut in four groups
+          cex = 0.8,  # label size
+          horiz = TRUE,               
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect_lty=1,
+          #labels_track_height = 1,
+          xlab = "",
+          ylab = "Similarity",
+          #rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          lower_rect = 0.6,
+          ggtheme = theme_classic()
+          ) + scale_x_reverse()
+t 
+```
+
+
+```{r cars}
+# figure_MGDG <- ggarrange (t,g,
+#                     labels = c("A","B"),
+#                     ncol = 2, nrow = 1, align = "h")
+# figure_MGDG
+
+library("cowplot")
+figure_MGDG <- ggdraw() +
+  draw_plot(t, x = 0, y = 0, width = 0.35, height = 1) +
+  draw_plot(g, x = 0.37, y = 0, width = 0.66, height = 0.97) +
+  draw_plot_label(label = c("A", "B"), size = 8,
+                  x = c(0, 0.5), y = c(1, 1))
+figure_MGDG
+```
+
+# CLUSTER WITH BOOSTRAP
+
+```{r cars}
+MGDG <- subset(final_corrected, class == "MGDG")
+
+# NECESITO SOLO ID, compound y relab
+MGDG <- select(MGDG, ID, compound, relab) 
+MGDG <- dcast(MGDG, ID ~ compound, value.var = c("relab"))
+MGDG <- data.frame(MGDG[,-1], row.names=MGDG[,1])
+
+MGDG[is.na(MGDG)] <- 0 # transformar todos los NA en zeros
+```
+
+```{r cars}
+Approximately_Unbiased <- data.frame(t(MGDG))
+```
+
+```{r cars}
+# Se generan solo 100 pseudo-muestras para agilizar el proceso, pero para casos
+# reales los autores no recomiendan bajar de 10000
+boot_hc_cluster <- pvclust(data = Approximately_Unbiased, method.dist = "euclidea",
+                           method.hclust = "average",
+                           nboot = 10, quiet = TRUE)
+# Al representar un objeto pvclust se obtiene el dendrograma con los valores de
+# AU-pvalue en rojo y BP-values en verde
+plot(boot_hc_cluster, cex = 0.8, print.num = FALSE, cex.pv = 0.8)
+
+# Con la función pvrect() se encuadran aquellos clusters significativos para una
+# confianza del 95%.
+pvrect(x = boot_hc_cluster, alpha = 0.95, pv = "au")
+```
+
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#                                             DGDG (di-glycosyl-diacyl-glycerol) 
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+```{r, message=FALSE}
+DGDG$ID <- factor(DGDG$ID, levels = c(
+"Hadal_Sed_H8_2_3cm_7734m",
+"Bathyal_Sed_B11_1113m",
+"Hadal_Sed_H8_1_2cm_7734m",
+"Hadal_Sed_H4_2_3cm_8063m",
+"Bathyal_Sed_B22_545m",
+"Bathyal_Sed_B08_539m",
+"Bathyal_Sed_B07_920m",
+"Hadal_Sed_H3_0_1cm_7890m",
+"Hadal_Sed_H8_0_1cm_7734m",
+"Hadal_Sed_H4_1_2cm_8063m",
+"Hadal_Sed_H4_0_1cm_8063m",
+"Bathyal_Sed_B04_1200m",
+"Hadal_Sed_H3_2_3cm_7890m",
+"Bathyal_Sed_B12_529m",
+"Bathyal_Sed_B05_957m",
+"Chl_Max_T5_2.7_28m",
+"Core_OMZ_T5_2.7_250m",
+"Core_OMZ_T3_2.7_250m",
+"Chl_Max_T3_2.7_9m",
+"Core_OMZ_T5_0.3_250m",
+"Core_OMZ_T3_0.3_250m",
+"Mesopelagic_T5_2.7_750m",
+"Mesopelagic_T5_0.3_750m",
+"Mesopelagic_T3_2.7_750m",
+"Mesopelagic_T3_0.3_750m",
+"Upper_Oxy_T5_2.7_35m",
+"Upper_Oxy_T3_2.7_14m",
+"Hadal_Sed_H3_1_2cm_7890m",
+"Chl_Max_T3_0.3_9m",
+"Upper_Oxy_T5_0.3_35m",
+"Lower_Oxy_T3_0.3_25m",
+"Upper_OMZ_T3_0.3_55m",
+"Upper_OMZ_T5_2.7_60m",
+"Chl_Max_T5_0.3_28m",
+"Lower_Oxy_T5_2.7_45m",
+"Upper_OMZ_T5_0.3_60m",
+"Upper_OMZ_T3_2.7_55m",
+"Lower_Oxy_T5_0.3_45m",
+"Lower_Oxy_T3_2.7_25m",
+"Upper_Oxy_T3_0.3_14m"
+))
+
+# Esta funcion es la que trabaja el color
+#cols <- colorRampPalette(brewer.pal(12, #"Accent"/"Dark2"/"Paired"/"RdBu"/"RdYlBu"/"Spectral")) # se puede usar en otro grupo
+
+cols <- colorRampPalette(brewer.pal(25, "Spectral"))
+myPal <- cols(length(unique(DGDG$compound)))
+
+p <- ggplot(data=DGDG, aes(x=relab, y=ID, fill=compound))
+g <- p + geom_bar(aes(y=ID), stat="identity", position= "stack") + 
+  #facet_wrap(~SampleType + SampleType2, scales = "free_y", nrow = 4, strip.position = "right") +
+  #facet_grid(SampleType + SampleType2~. , scales = "free_y", space = "free_y") + 
+  theme_bw() +
+  scale_fill_manual(values = myPal) +
+  
+ xlab("Relative abundance") + ylab("Stations") +
+  theme(legend.title = element_blank(), legend.position = "right") + 
+   theme(legend.key.height = unit(0.1, "mm"))  +
+   theme(legend.key.width  = unit(3.7, "mm"))  +
+   theme(legend.key.size  = unit(0.1, "mm"))  +
+   theme(legend.title = element_text(size = 9), 
+               legend.text = element_text(size = 7.7)) +
+   guides(fill=guide_legend(ncol =1)) 
+g
+```
+
+```{r cars}
+DGDG <- subset(final_corrected, class == "DGDG")
+
+# NECESITO SOLO ID, compound y relab
+DGDG <- select(DGDG, ID, compound, relab) 
+DGDG <- dcast(DGDG, ID ~ compound, value.var = c("relab"))
+DGDG <- data.frame(DGDG[,-1], row.names=DGDG[,1])
+
+DGDG[is.na(DGDG)] <- 0 # transformar todos los NA en zeros
+
+# Compute distances and hierarchical clustering
+library(factoextra)
+# metodo elegido
+dd<- vegdist(DGDG, method = "bray")
+hc <- hclust(dd, method =  "average")
+
+t <- fviz_dend(hc, k = 4,            # Cut in four groups
+          cex = 0.8,  # label size
+          horiz = TRUE,               
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect_lty=1,
+          #labels_track_height = 1,
+          xlab = "",
+          ylab = "Similarity",
+          #rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          lower_rect = 0.6,
+          ggtheme = theme_classic()
+          ) + scale_x_reverse()
+t 
+```
+
+
+```{r cars}
+# figure_DGDG <- ggarrange (t,g,
+#                     labels = c("A","B"),
+#                     ncol = 2, nrow = 1, align = "h")
+# figure_DGDG
+
+library("cowplot")
+figure_DGDG <- ggdraw() +
+  draw_plot(t, x = 0, y = 0, width = 0.35, height = 1) +
+  draw_plot(g, x = 0.37, y = 0, width = 0.65, height = 0.97) +
+  draw_plot_label(label = c("A", "B"), size = 8,
+                  x = c(0, 0.5), y = c(1, 1))
+figure_DGDG
+```
+
+
+# CLUSTER BOOSTRAP 
+
+```{r cars}
+DGDG <- subset(final_corrected, class == "DGDG")
+
+# NECESITO SOLO ID, compound y relab
+DGDG <- select(DGDG, ID, compound, relab) 
+DGDG <- dcast(DGDG, ID ~ compound, value.var = c("relab"))
+DGDG <- data.frame(DGDG[,-1], row.names=DGDG[,1])
+
+DGDG[is.na(DGDG)] <- 0 # transformar todos los NA en zeros
+```
+
+```{r cars}
+Approximately_Unbiased <- data.frame(t(DGDG))
+```
+
+```{r cars}
+# Se generan solo 100 pseudo-muestras para agilizar el proceso, pero para casos
+# reales los autores no recomiendan bajar de 10000
+boot_hc_cluster <- pvclust(data = Approximately_Unbiased, method.dist = "euclidea",
+                           method.hclust = "average",
+                           nboot = 10, quiet = TRUE)
+# Al representar un objeto pvclust se obtiene el dendrograma con los valores de
+# AU-pvalue en rojo y BP-values en verde
+plot(boot_hc_cluster, cex = 0.8, print.num = FALSE, cex.pv = 0.8)
+
+# Con la función pvrect() se encuadran aquellos clusters significativos para una
+# confianza del 95%.
+pvrect(x = boot_hc_cluster, alpha = 0.95, pv = "au")
+```
+
+
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#                                           SQDG (sulphaquinovosyl-diacyl-glycerol) 
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+```{r, message=FALSE}
+SQDG$ID <- factor(SQDG$ID, levels = c(
+"Mesopelagic_T5_2.7_750m",
+"Core_OMZ_T3_0.3_250m",
+"Mesopelagic_T5_0.3_750m",
+"Mesopelagic_T3_2.7_750m",
+"Chl_Max_T5_2.7_28m",
+"Upper_OMZ_T5_2.7_60m",
+"Upper_Oxy_T5_0.3_35m",
+"Lower_Oxy_T5_2.7_45m",
+"Upper_Oxy_T5_2.7_35m",
+"Chl_Max_T3_2.7_9m",
+"Lower_Oxy_T3_2.7_25m",
+"Chl_Max_T3_0.3_9m",
+"Upper_OMZ_T5_0.3_60m",
+"Lower_Oxy_T3_0.3_25m",
+"Lower_Oxy_T5_0.3_45m",
+"Upper_Oxy_T3_2.7_14m",
+"Upper_Oxy_T3_0.3_14m",
+"Upper_OMZ_T3_0.3_55m",
+"Core_OMZ_T5_0.3_250m",
+"Upper_OMZ_T3_2.7_55m",
+"Core_OMZ_T5_2.7_250m",
+"Core_OMZ_T3_2.7_250m",
+"Mesopelagic_T3_0.3_750m",
+"Hadal_Sed_H8_0_1cm_7734m",
+"Bathyal_Sed_B11_1113m",
+"Hadal_Sed_H8_1_2cm_7734m",
+"Hadal_Sed_H8_2_3cm_7734m",
+"Bathyal_Sed_B12_529m",
+"Bathyal_Sed_B05_957m",
+"Hadal_Sed_H4_2_3cm_8063m",
+"Hadal_Sed_H3_1_2cm_7890m",
+"Hadal_Sed_H4_0_1cm_8063m",
+"Hadal_Sed_H3_2_3cm_7890m",
+"Bathyal_Sed_B22_545m",
+"Bathyal_Sed_B08_539m",
+"Bathyal_Sed_B04_1200m",
+"Hadal_Sed_H4_1_2cm_8063m",
+"Hadal_Sed_H3_0_1cm_7890m",
+"Bathyal_Sed_B07_920m",
+"Chl_Max_T5_0.3_28m"))
+
+# Esta funcion es la que trabaja el color
+#cols <- colorRampPalette(brewer.pal(12, #"Accent"/"Dark2"/"Paired"/"RdBu"/"RdYlBu"/"Spectral")) # se puede usar en otro grupo
+
+cols <- colorRampPalette(brewer.pal(30, "Accent"))
+myPal <- cols(length(unique(SQDG$compound)))
+
+
+p <- ggplot(data=SQDG, aes(x=relab, y=ID, fill=compound))
+g <- p + geom_bar(aes(y=ID), stat="identity", position= "stack") + 
+  #facet_wrap(~SampleType + SampleType2, scales = "free_y", nrow = 4, strip.position = "right") +
+  #facet_grid(SampleType + SampleType2~. , scales = "free_y", space = "free_y") + 
+  theme_bw() +
+  scale_fill_manual(values = myPal) +
+ xlab("Relative abundance") + ylab(" ") +
+  theme(legend.title = element_blank(), legend.position = "right") + 
+   theme(legend.key.height = unit(0.1, "mm"))  +
+   theme(legend.key.width  = unit(3.7, "mm"))  +
+   theme(legend.key.size  = unit(0.1, "mm"))  +
+   theme(legend.title = element_text(size = 6), 
+               legend.text = element_text(size = 7.7)) +
+   guides(fill=guide_legend(ncol =1)) 
+g
+```
+
+```{r cars}
+SQDG <- subset(final_corrected, class == "SQ")
+
+# NECESITO SOLO ID, compound y relab
+SQDG <- select(SQDG, ID, compound, relab) 
+SQDG <- dcast(SQDG, ID ~ compound, value.var = c("relab"))
+SQDG <- data.frame(SQDG[,-1], row.names=SQDG[,1])
+
+SQDG[is.na(SQDG)] <- 0 # transformar todos los NA en zeros
+
+# Compute distances and hierarchical clustering
+library(factoextra)
+# metodo elegido
+dd<- vegdist(SQDG, method = "bray")
+hc <- hclust(dd, method =  "average")
+
+t <- fviz_dend(hc, k = 4,            # Cut in four groups
+          cex = 0.8,  # label size
+          horiz = TRUE,               
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect_lty=1,
+          #labels_track_height = 1,
+          xlab = "",
+          ylab = "Similarity",
+          #rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          lower_rect = 0.6,
+          ggtheme = theme_classic()
+          ) + scale_x_reverse()
+t 
+```
+
+```{r cars}
+# figure_SQDG1 <- ggarrange (t,g,
+#                     labels = c("A","B"),
+#                     ncol = 2, nrow = 1, align = "h")
+# figure_SQDG1
+
+library("cowplot")
+figure_SQDG <- ggdraw() +
+  draw_plot(t, x = 0, y = 0, width = 0.35, height = 1) +
+  draw_plot(g, x = 0.37, y = 0, width = 0.66, height = 0.97) +
+  draw_plot_label(label = c("A", "B"), size = 8,
+                  x = c(0, 0.5), y = c(1, 1))
+figure_SQDG
+```
+
+# CLUSTER WITH BOOSTRAP
+
+```{r cars}
+SQDG <- subset(final_corrected, class == "SQ")
+
+# NECESITO SOLO ID, compound y relab
+SQDG <- select(SQDG, ID, compound, relab) 
+SQDG <- dcast(SQDG, ID ~ compound, value.var = c("relab"))
+SQDG <- data.frame(SQDG[,-1], row.names=SQDG[,1])
+
+SQDG[is.na(SQDG)] <- 0 # transformar todos los NA en zeros
+```
+
+```{r cars}
+Approximately_Unbiased <- data.frame(t(SQDG))
+```
+
+```{r cars}
+# Se generan solo 100 pseudo-muestras para agilizar el proceso, pero para casos
+# reales los autores no recomiendan bajar de 10000
+boot_hc_cluster <- pvclust(data = Approximately_Unbiased, method.dist = "euclidea",
+                           method.hclust = "average",
+                           nboot = 10, quiet = TRUE)
+# Al representar un objeto pvclust se obtiene el dendrograma con los valores de
+# AU-pvalue en rojo y BP-values en verde
+plot(boot_hc_cluster, cex = 0.8, print.num = FALSE, cex.pv = 0.8)
+
+# Con la función pvrect() se encuadran aquellos clusters significativos para una
+# confianza del 95%.
+pvrect(x = boot_hc_cluster, alpha = 0.95, pv = "au")
+```
+
+
+
+
+
+
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#                                                         PHOSPHOLIPIDS 
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#                                                  PG (Phosphatidylglycerol) 
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+
+```{r, message=FALSE}
+PG$ID <- factor(PG$ID, levels = c(
+"Upper_Oxy_T5_2.7_35m",
+"Chl_Max_T5_2.7_28m",
+"Upper_Oxy_T3_2.7_14m",
+"Core_OMZ_T5_0.3_250m",
+"Core_OMZ_T3_0.3_250m",
+"Lower_Oxy_T3_0.3_25m",
+"Upper_OMZ_T3_0.3_55m",
+"Lower_Oxy_T5_0.3_45m",
+"Core_OMZ_T3_2.7_250m",
+"Chl_Max_T3_0.3_9m",
+"Upper_Oxy_T5_0.3_35m",
+"Lower_Oxy_T3_2.7_25m",
+"Upper_OMZ_T5_0.3_60m",
+"Upper_OMZ_T5_2.7_60m",
+"Core_OMZ_T5_2.7_250m",
+"Hadal_Sed_H3_1_2cm_7890m",
+"Hadal_Sed_H3_0_1cm_7890m",
+"Hadal_Sed_H8_0_1cm_7734m",
+"Bathyal_Sed_B22_545m",
+"Hadal_Sed_H4_1_2cm_8063m",
+"Hadal_Sed_H8_1_2cm_7734m",
+"Hadal_Sed_H4_0_1cm_8063m",
+"Hadal_Sed_H3_2_3cm_7890m",
+"Hadal_Sed_H4_2_3cm_8063m",
+"Bathyal_Sed_B04_1200m",
+"Hadal_Sed_H8_2_3cm_7734m",
+"Bathyal_Sed_B07_920m",
+"Bathyal_Sed_B12_529m",
+"Bathyal_Sed_B11_1113m",
+"Bathyal_Sed_B08_539m",
+"Bathyal_Sed_B05_957m",
+"Upper_Oxy_T3_0.3_14m",
+"Chl_Max_T5_0.3_28m",
+"Mesopelagic_T5_0.3_750m",
+"Mesopelagic_T3_0.3_750m",
+"Chl_Max_T3_2.7_9m",
+"Mesopelagic_T3_2.7_750m",
+"Mesopelagic_T5_2.7_750m",
+"Lower_Oxy_T5_2.7_45m",
+"Upper_OMZ_T3_2.7_55m"))
+
+# Esta funcion es la que trabaja el color
+#cols <- colorRampPalette(brewer.pal(12, #"Accent"/"Dark2"/"Paired"/"RdBu"/"RdYlBu"/"Spectral")) # se puede usar en otro grupo
+
+cols <- colorRampPalette(brewer.pal(30, "Spectral"))
+myPal <- cols(length(unique(PG$compound)))
+
+
+p <- ggplot(data=PG, aes(x=relab, y=ID, fill=compound))
+g <- p + geom_bar(aes(y=ID), stat="identity", position= "stack") + 
+  #facet_wrap(~SampleType + SampleType2, scales = "free_y", nrow = 4, strip.position = "right") +
+  #facet_grid(SampleType + SampleType2~. , scales = "free_y", space = "free_y") + 
+  theme_bw() +
+  scale_fill_manual(values = myPal) +
+  
+  xlab("Relative abundance") + ylab(" ") +
+  theme(legend.title = element_blank(), legend.position = "right") + 
+   theme(legend.key.height = unit(0.1, "mm"))  +
+   theme(legend.key.width  = unit(3.7, "mm"))  +
+   theme(legend.key.size  = unit(0.1, "mm"))  +
+   theme(legend.title = element_text(size = 7), 
+               legend.text = element_text(size = 7.7)) +
+   guides(fill=guide_legend(ncol =1)) 
+g
+```
+
+```{r cars}
+PG <- subset(final_corrected, class == "PG")
+
+# NECESITO SOLO ID, compound y relab
+PG <- select(PG, ID, compound, relab) 
+PG <- dcast(PG, ID ~ compound, value.var = c("relab"))
+PG <- data.frame(PG[,-1], row.names=PG[,1])
+
+PG[is.na(PG)] <- 0 # transformar todos los NA en zeros
+
+# Compute distances and hierarchical clustering
+library(factoextra)
+# metodo elegido
+dd<- vegdist(PG, method = "bray")
+hc <- hclust(dd, method =  "average")
+
+t <- fviz_dend(hc, k = 4,            # Cut in four groups
+          cex = 0.8,  # label size
+          horiz = TRUE,               
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect_lty=1,
+          #labels_track_height = 1,
+          xlab = "",
+          ylab = "Similarity",
+          #rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          lower_rect = 0.6,
+          ggtheme = theme_classic()
+          ) + scale_x_reverse()
+t 
+```
+
+
+```{r cars}
+# figure_PG1 <- ggarrange (t,g,
+#                     labels = c("A","B"),
+#                     ncol = 2, nrow = 1, align = "h")
+# figure_PG1
+
+library("cowplot")
+figure_PG <- ggdraw() +
+  draw_plot(t, x = 0, y = 0, width = 0.35, height = 1) +
+  draw_plot(g, x = 0.37, y = 0, width = 0.66, height = 0.97) +
+  draw_plot_label(label = c("A", "B"), size = 8,
+                  x = c(0, 0.5), y = c(1, 1))
+figure_PG
+```
+
+# CLUSTER WITH BOOSTRAP
+
+```{r cars}
+PG <- subset(final_corrected, class == "PG")
+
+# NECESITO SOLO ID, compound y relab
+PG <- select(PG, ID, compound, relab) 
+PG <- dcast(PG, ID ~ compound, value.var = c("relab"))
+PG <- data.frame(PG[,-1], row.names=PG[,1])
+
+PG[is.na(PG)] <- 0 # transformar todos los NA en zeros
+```
+
+```{r cars}
+Approximately_Unbiased <- data.frame(t(PG))
+```
+
+```{r cars}
+# Se generan solo 100 pseudo-muestras para agilizar el proceso, pero para casos
+# reales los autores no recomiendan bajar de 10000
+boot_hc_cluster <- pvclust(data = Approximately_Unbiased, method.dist = "euclidea",
+                           method.hclust = "average",
+                           nboot = 10, quiet = TRUE)
+# Al representar un objeto pvclust se obtiene el dendrograma con los valores de
+# AU-pvalue en rojo y BP-values en verde
+plot(boot_hc_cluster, cex = 0.8, print.num = FALSE, cex.pv = 0.8)
+
+# Con la función pvrect() se encuadran aquellos clusters significativos para una
+# confianza del 95%.
+pvrect(x = boot_hc_cluster, alpha = 0.95, pv = "au")
+```
+
+
+
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#                                                  PE (Phosphatidyl-ethanolamine) 
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+```{r, message=FALSE}
+PE$ID <- factor(PE$ID, levels = c(
+"Hadal_Sed_H8_2_3cm_7734m",
+"Hadal_Sed_H3_0_1cm_7890m",
+"Bathyal_Sed_B07_920m",
+"Bathyal_Sed_B05_957m",
+"Bathyal_Sed_B11_1113m",
+"Bathyal_Sed_B08_539m",
+"Hadal_Sed_H8_0_1cm_7734m",
+"Bathyal_Sed_B22_545m",
+"Hadal_Sed_H4_2_3cm_8063m",
+"Hadal_Sed_H3_1_2cm_7890m",
+"Hadal_Sed_H8_1_2cm_7734m",
+"Hadal_Sed_H4_0_1cm_8063m",
+"Hadal_Sed_H3_2_3cm_7890m",
+"Bathyal_Sed_B04_1200m",
+"Hadal_Sed_H4_1_2cm_8063m",
+"Bathyal_Sed_B12_529m",
+"Core_OMZ_T5_0.3_250m",
+"Core_OMZ_T3_0.3_250m",
+"Upper_OMZ_T3_0.3_55m",
+"Mesopelagic_T5_2.7_750m",
+"Upper_Oxy_T3_0.3_14m",
+"Mesopelagic_T3_2.7_750m",
+"Chl_Max_T5_0.3_28m",
+"Upper_OMZ_T5_2.7_60m",
+"Lower_Oxy_T5_0.3_45m",
+"Upper_OMZ_T5_0.3_60m",
+"Upper_Oxy_T5_0.3_35m",
+"Core_OMZ_T5_2.7_250m",
+"Core_OMZ_T3_2.7_250m",
+"Upper_OMZ_T3_2.7_55m",
+"Lower_Oxy_T3_0.3_25m",
+"Chl_Max_T3_0.3_9m",
+"Lower_Oxy_T5_2.7_45m",
+"Lower_Oxy_T3_2.7_25m",
+"Upper_Oxy_T5_2.7_35m",
+"Chl_Max_T3_2.7_9m",
+"Chl_Max_T5_2.7_28m",
+"Mesopelagic_T5_0.3_750m",
+"Mesopelagic_T3_0.3_750m",
+"Upper_Oxy_T3_2.7_14m"
+))
+
+# Esta funcion es la que trabaja el color
+#cols <- colorRampPalette(brewer.pal(12, #"Accent"/"Dark2"/"Paired"/"RdBu"/"RdYlBu"/"Spectral")) # se puede usar en otro grupo
+
+cols <- colorRampPalette(brewer.pal(30, "RdYlBu"))
+myPal <- cols(length(unique(PE$compound)))
+
+
+p <- ggplot(data=PE, aes(x=relab, y=ID, fill=compound))
+g <- p + geom_bar(aes(y=ID), stat="identity", position= "stack") + 
+  #facet_wrap(~SampleType + SampleType2, scales = "free_y", nrow = 4, strip.position = "right") +
+  #facet_grid(SampleType + SampleType2~. , scales = "free_y", space = "free_y") + 
+  theme_bw() +
+  scale_fill_manual(values = myPal) +
+  
+ xlab("Relative abundance") + ylab("Stations") +
+  theme(legend.title = element_blank(), legend.position = "right") + 
+   theme(legend.key.height = unit(0.1, "mm"))  +
+   theme(legend.key.width  = unit(3.7, "mm"))  +
+   theme(legend.key.size  = unit(0.1, "mm"))  +
+   theme(legend.title = element_text(size = 6), 
+               legend.text = element_text(size = 7.7)) +
+   guides(fill=guide_legend(ncol =1)) 
+g
+```
+
+```{r cars}
+PE <- subset(final_corrected, class == "PE")
+
+# NECESITO SOLO ID, compound y relab
+PE <- select(PE, ID, compound, relab) 
+PE <- dcast(PE, ID ~ compound, value.var = c("relab"))
+PE <- data.frame(PE[,-1], row.names=PE[,1])
+
+PE[is.na(PE)] <- 0 # transformar todos los NA en zeros
+
+# Compute distances and hierarchical clustering
+library(factoextra)
+# metodo elegido
+dd<- vegdist(PE, method = "bray")
+hc <- hclust(dd, method =  "average")
+
+t <- fviz_dend(hc, k = 4,            # Cut in four groups
+          cex = 0.8,  # label size
+          horiz = TRUE,               
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect_lty=1,
+          #labels_track_height = 1,
+          xlab = "",
+          ylab = "Similarity",
+          #rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          lower_rect = 0.6,
+          ggtheme = theme_classic()
+          ) + scale_x_reverse()
+t 
+```
+
+
+```{r cars}
+# figure_PE1 <- ggarrange (t,g,
+#                     labels = c("A","B"),
+#                     ncol = 2, nrow = 1, align = "h")
+# figure_PE1
+
+library("cowplot")
+figure_PE <- ggdraw() +
+  draw_plot(t, x = 0, y = 0, width = 0.35, height = 1) +
+  draw_plot(g, x = 0.37, y = 0, width = 0.66, height = 0.97) +
+  draw_plot_label(label = c("A", "B"), size = 8,
+                  x = c(0, 0.5), y = c(1, 1))
+figure_PE
+```
+
+
+# cluster with boostrap
+
+```{r cars}
+PE <- subset(final_corrected, class == "PE")
+
+# NECESITO SOLO ID, compound y relab
+PE <- select(PE, ID, compound, relab) 
+PE <- dcast(PE, ID ~ compound, value.var = c("relab"))
+PE <- data.frame(PE[,-1], row.names=PE[,1])
+
+PE[is.na(PE)] <- 0 # transformar todos los NA en zeros
+```
+
+```{r cars}
+Approximately_Unbiased <- data.frame(t(PE))
+```
+
+```{r cars}
+# Se generan solo 100 pseudo-muestras para agilizar el proceso, pero para casos
+# reales los autores no recomiendan bajar de 10000
+boot_hc_cluster <- pvclust(data = Approximately_Unbiased, method.dist = "euclidea",
+                           method.hclust = "average",
+                           nboot = 10, quiet = TRUE)
+# Al representar un objeto pvclust se obtiene el dendrograma con los valores de
+# AU-pvalue en rojo y BP-values en verde
+plot(boot_hc_cluster, cex = 0.8, print.num = FALSE, cex.pv = 0.8)
+
+# Con la función pvrect() se encuadran aquellos clusters significativos para una
+# confianza del 95%.
+pvrect(x = boot_hc_cluster, alpha = 0.95, pv = "au")
+```
+
+
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#                                                  PC (Phosphatidyl-colina) 
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+```{r, message=FALSE}
+PC$ID <- factor(PC$ID, levels = c(
+"Core_OMZ_T5_0.3_250m",
+"Core_OMZ_T3_0.3_250m",
+"Hadal_Sed_H4_0_1cm_8063m",
+"Bathyal_Sed_B11_1113m",
+"Bathyal_Sed_B05_957m",
+"Bathyal_Sed_B12_529m",
+"Hadal_Sed_H8_2_3cm_7734m",
+"Hadal_Sed_H3_0_1cm_7890m",
+"Bathyal_Sed_B08_539m",
+"Bathyal_Sed_B07_920m",
+"Bathyal_Sed_B22_545m",
+"Hadal_Sed_H8_0_1cm_7734m",
+"Hadal_Sed_H3_1_2cm_7890m",
+"Hadal_Sed_H8_1_2cm_7734m",
+"Hadal_Sed_H4_2_3cm_8063m",
+"Hadal_Sed_H3_2_3cm_7890m",
+"Bathyal_Sed_B04_1200m",
+"Hadal_Sed_H4_1_2cm_8063m",
+"Lower_Oxy_T5_2.7_45m",
+"Lower_Oxy_T3_2.7_25m",
+"Upper_Oxy_T5_2.7_35m",
+"Upper_OMZ_T5_2.7_60m",
+"Chl_Max_T3_0.3_9m",
+"Lower_Oxy_T3_0.3_25m",
+"Upper_Oxy_T5_0.3_35m",
+"Upper_OMZ_T3_2.7_55m",
+"Lower_Oxy_T5_0.3_45m",
+"Core_OMZ_T3_2.7_250m",
+"Upper_OMZ_T5_0.3_60m",
+"Chl_Max_T3_2.7_9m",
+"Core_OMZ_T5_2.7_250m",
+"Upper_Oxy_T3_0.3_14m",
+"Chl_Max_T5_0.3_28m",
+"Mesopelagic_T5_2.7_750m",
+"Chl_Max_T5_2.7_28m",
+"Upper_OMZ_T3_0.3_55m",
+"Mesopelagic_T3_2.7_750m",
+"Mesopelagic_T5_0.3_750m",
+"Mesopelagic_T3_0.3_750m",
+"Upper_Oxy_T3_2.7_14m"
+))
+
+# Esta funcion es la que trabaja el color
+#cols <- colorRampPalette(brewer.pal(12, #"Accent"/"Dark2"/"Paired"/"RdBu"/"RdYlBu"/"Spectral")) # se puede usar en otro grupo
+
+#cols <- colorRampPalette(brewer.pal(50, "RdBu"))
+#myPal <- cols(length(unique(PC$compound)))
+pal <- wes_palette(43, name = "Darjeeling1", type = "continuous")
+
+# Alternativas
+#>  [1] "BottleRocket1"  "BottleRocket2"  "Rushmore1"      "Rushmore"      
+#>  [5] "Royal1"         "Royal2"         "Zissou1"        "Darjeeling1"   
+#>  [9] "Darjeeling2"    "Chevalier1"     "FantasticFox1"  "Moonrise1"     
+#> [13] "Moonrise2"      "Moonrise3"      "Cavalcanti1"    "GrandBudapest1"
+#> [17] "GrandBudapest2" "IsleofDogs1"    "IsleofDogs2"
+
+p <- ggplot(data=PC, aes(x=relab, y=ID, fill=compound))
+g <- p + geom_bar(aes(y=ID), stat="identity", position= "stack") + 
+  #facet_wrap(~SampleType + SampleType2, scales = "free_y", nrow = 4, strip.position = "right") +
+  #facet_grid(SampleType + SampleType2~. , scales = "free_y", space = "free_y") + 
+  theme_bw() +
+  scale_fill_manual(values = pal) +
+  
+ xlab("Relative abundance") + ylab(" ") +
+  theme(legend.title = element_blank(), legend.position = "right") + 
+   theme(legend.key.height = unit(0.1, "mm"))  +
+   theme(legend.key.width  = unit(3.7, "mm"))  +
+   theme(legend.key.size  = unit(0.1, "mm"))  +
+   theme(legend.title = element_text(size = 9), 
+               legend.text = element_text(size = 7.7)) +
+   guides(fill=guide_legend(ncol =1)) 
+g
+```
+
+```{r cars}
+PC <- subset(final_corrected, class == "PC")
+
+# NECESITO SOLO ID, compound y relab
+PC <- select(PC, ID, compound, relab) 
+PC <- dcast(PC, ID ~ compound, value.var = c("relab"))
+PC <- data.frame(PC[,-1], row.names=PC[,1])
+
+PC[is.na(PC)] <- 0 # transformar todos los NA en zeros
+
+# Compute distances and hierarchical clustering
+library(factoextra)
+# metodo elegido
+dd<- vegdist(PC, method = "bray")
+hc <- hclust(dd, method =  "average")
+
+t <- fviz_dend(hc, k = 4,            # Cut in four groups
+          cex = 0.8,  # label size
+          horiz = TRUE,               
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect_lty=1,
+          #labels_track_height = 1,
+          xlab = "",
+          ylab = "Similarity",
+          #rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          lower_rect = 0.6,
+          ggtheme = theme_classic()
+          ) + scale_x_reverse()
+t 
+```
+
+```{r cars}
+# figure_PC1 <- ggarrange (t,g,
+#                     labels = c("A","B"),
+#                     ncol = 2, nrow = 1, align = "h")
+# figure_PC1
+
+library("cowplot")
+figure_PC <- ggdraw() +
+  draw_plot(t, x = 0, y = 0, width = 0.35, height = 1) +
+  draw_plot(g, x = 0.36, y = 0, width = 0.66, height = 0.97) +
+  draw_plot_label(label = c("A", "B"), size = 8,
+                  x = c(0, 0.5), y = c(1, 1))
+figure_PC
+```
+
+# CLUSTER WITH BOOSTRAP
+
+```{r cars}
+PC <- subset(final_corrected, class == "PC")
+
+# NECESITO SOLO ID, compound y relab
+PC <- select(PC, ID, compound, relab) 
+PC <- dcast(PC, ID ~ compound, value.var = c("relab"))
+PC <- data.frame(PC[,-1], row.names=PC[,1])
+
+PC[is.na(PC)] <- 0 # transformar todos los NA en zeros
+```
+
+```{r cars}
+Approximately_Unbiased <- data.frame(t(PC))
+```
+
+```{r cars}
+# Se generan solo 100 pseudo-muestras para agilizar el proceso, pero para casos
+# reales los autores no recomiendan bajar de 10000
+boot_hc_cluster <- pvclust(data = Approximately_Unbiased, method.dist = "euclidea",
+                           method.hclust = "average",
+                           nboot = 10, quiet = TRUE)
+# Al representar un objeto pvclust se obtiene el dendrograma con los valores de
+# AU-pvalue en rojo y BP-values en verde
+plot(boot_hc_cluster, cex = 0.8, print.num = FALSE, cex.pv = 0.8)
+
+# Con la función pvrect() se encuadran aquellos clusters significativos para una
+# confianza del 95%.
+pvrect(x = boot_hc_cluster, alpha = 0.95, pv = "au")
+```
+
+
+
+# OTHER (AR) Y 
+# PME/PDME
+```{r, message=FALSE}
+PME_PDME$ID <- factor(PME_PDME$ID, levels = c(
+"Hadal_Sed_H8_1_2cm_7734m",
+"Hadal_Sed_H8_0_1cm_7734m",
+"Hadal_Sed_H8_2_3cm_7734m",
+"Bathyal_Sed_B12_529m",
+"Bathyal_Sed_B11_1113m",
+"Bathyal_Sed_B08_539m",
+"Bathyal_Sed_B07_920m",
+"Bathyal_Sed_B22_545m",
+"Bathyal_Sed_B05_957m",
+"Hadal_Sed_H3_0_1cm_7890m",
+"Bathyal_Sed_B04_1200m",
+"Hadal_Sed_H4_1_2cm_8063m",
+"Hadal_Sed_H3_2_3cm_7890m",
+"Hadal_Sed_H4_2_3cm_8063m",
+"Hadal_Sed_H3_1_2cm_7890m",
+"Upper_OMZ_T3_0.3_55m",
+"Core_OMZ_T5_2.7_250m",
+"Core_OMZ_T5_0.3_250m",
+"Core_OMZ_T3_0.3_250m",
+"Mesopelagic_T5_2.7_750m",
+"Upper_OMZ_T5_2.7_60m",
+"Lower_Oxy_T5_0.3_45m",
+"Chl_Max_T3_0.3_9m",
+"Upper_OMZ_T5_0.3_60m",
+"Upper_OMZ_T3_2.7_55m",
+"Core_OMZ_T3_2.7_250m",
+"Upper_Oxy_T5_0.3_35m",
+"Upper_Oxy_T3_2.7_14m",
+"Upper_Oxy_T5_2.7_35m",
+"Chl_Max_T3_2.7_9m",
+"Lower_Oxy_T5_2.7_45m",
+"Lower_Oxy_T3_0.3_25m",
+"Lower_Oxy_T3_2.7_25m",
+"Mesopelagic_T3_2.7_750m",
+"Chl_Max_T5_2.7_28m",
+"Upper_Oxy_T3_0.3_14m",
+"Hadal_Sed_H4_0_1cm_8063m",
+"Mesopelagic_T5_0.3_750m",
+"Mesopelagic_T3_0.3_750m",
+"Chl_Max_T5_0.3_28m"
+))
+
+
+# Esta funcion es la que trabaja el color
+#cols <- colorRampPalette(brewer.pal(12, #"Accent"/"Dark2"/"Paired"/"RdBu"/"RdYlBu"/"Spectral")) # se puede usar en otro grupo
+
+#cols <- colorRampPalette(brewer.pal(50, "RdBu"))
+#myPal <- cols(length(unique(PME_PDME$compound)))
+pal <- wes_palette(43, name = "Darjeeling2", type = "continuous")
+
+# Alternativas
+#>  [1] "BottleRocket1"  "BottleRocket2"  "Rushmore1"      "Rushmore"      
+#>  [5] "Royal1"         "Royal2"         "Zissou1"        "Darjeeling1"   
+#>  [9] "Darjeeling2"    "Chevalier1"     "FantasticFox1"  "Moonrise1"     
+#> [13] "Moonrise2"      "Moonrise3"      "Cavalcanti1"    "GrandBudapest1"
+#> [17] "GrandBudapest2" "IsleofDogs1"    "IsleofDogs2"
+
+
+p <- ggplot(data=PME_PDME, aes(x=relab, y=ID, fill=compound))
+g <- p + geom_bar(aes(y=ID), stat="identity", position= "stack") + 
+  #facet_wrap(~SampleType + SampleType2, scales = "free_y", nrow = 4, strip.position = "right") +
+  #facet_grid(SampleType + SampleType2~. , scales = "free_y", space = "free_y") + 
+  theme_bw() +
+  scale_fill_manual(values = pal) +
+  
+ xlab("Relative abundance") + ylab(" ") +
+  theme(legend.title = element_blank(), legend.position = "right") + 
+   theme(legend.key.height = unit(0.1, "mm"))  +
+   theme(legend.key.width  = unit(3.5, "mm"))  +
+   theme(legend.key.size  = unit(0.1, "mm"))  +
+   theme(legend.title = element_text(size = 5), 
+               legend.text = element_text(size = 7.7)) +
+   guides(fill=guide_legend(ncol =1)) 
+g
+```
+
+```{r cars}
+PME_PDME <- subset(final_corrected, class == "PME/PDME")
+
+# NECESITO SOLO ID, compound y relab
+PME_PDME <- select(PME_PDME, ID, compound, relab) 
+PME_PDME <- dcast(PME_PDME, ID ~ compound, value.var = c("relab"))
+PME_PDME <- data.frame(PME_PDME[,-1], row.names=PME_PDME[,1])
+
+PME_PDME[is.na(PME_PDME)] <- 0 # transformar todos los NA en zeros
+
+# Compute distances and hierarchical clustering
+library(factoextra)
+# metodo elegido
+dd<- vegdist(PME_PDME, method = "bray")
+hc <- hclust(dd, method =  "average")
+
+t <- fviz_dend(hc, k = 4,            # Cut in four groups
+          cex = 0.8,  # label size
+          horiz = TRUE,               
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect_lty=1,
+          #labels_track_height = 1,
+          xlab = "",
+          ylab = "Similarity",
+          #rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          lower_rect = 0.6,
+          ggtheme = theme_classic()
+          ) + scale_x_reverse()
+t 
+```
+
+```{r cars}
+# figure_PME_PDME1<- ggarrange (t,g,
+#                     labels = c("A","B"),
+#                     ncol = 2, nrow = 1, align = "h")
+# figure_PME_PDME1
+
+library("cowplot")
+figure_PME_PDME <- ggdraw() +
+  draw_plot(t, x = 0, y = 0, width = 0.35, height = 1) +
+  draw_plot(g, x = 0.37, y = 0, width = 0.66, height = 0.97) +
+  draw_plot_label(label = c("A", "B"), size = 8,
+                  x = c(0, 0.5), y = c(1, 1))
+figure_PME_PDME
+```
+
+
+# CLUSTER WITH BOOSTRAP
+
+```{r cars}
+PME_PDME <- subset(final_corrected, class == "PME/PDME")
+
+# NECESITO SOLO ID, compound y relab
+PME_PDME <- select(PME_PDME, ID, compound, relab) 
+PME_PDME <- dcast(PME_PDME, ID ~ compound, value.var = c("relab"))
+PME_PDME <- data.frame(PME_PDME[,-1], row.names=PME_PDME[,1])
+
+PME_PDME[is.na(PME_PDME)] <- 0 # transformar todos los NA en zeros
+```
+
+
+```{r cars}
+Approximately_Unbiased <- data.frame(t(PME_PDME))
+```
+
+```{r cars}
+# Se generan solo 100 pseudo-muestras para agilizar el proceso, pero para casos
+# reales los autores no recomiendan bajar de 10000
+boot_hc_cluster <- pvclust(data = Approximately_Unbiased, method.dist = "euclidea",
+                           method.hclust = "average",
+                           nboot = 10, quiet = TRUE)
+# Al representar un objeto pvclust se obtiene el dendrograma con los valores de
+# AU-pvalue en rojo y BP-values en verde
+plot(boot_hc_cluster, cex = 0.8, print.num = FALSE, cex.pv = 0.8)
+
+# Con la función pvrect() se encuadran aquellos clusters significativos para una
+# confianza del 95%.
+pvrect(x = boot_hc_cluster, alpha = 0.95, pv = "au")
+```
+#---------------------------------------------------------------------------------------------------------------------------------------------
+# OTHER  
+```{r, message=FALSE}
+Other$ID <- factor(Other$ID, levels = c(
+"Upper_Oxy_T5_2.7_35m",
+"Upper_Oxy_T3_0.3_14m",
+"Upper_OMZ_T3_2.7_55m",
+"Upper_Oxy_T5_0.3_35m",
+"Chl_Max_T3_2.7_9m",
+"Lower_Oxy_T3_2.7_25m",
+"Mesopelagic_T5_0.3_750m",
+"Mesopelagic_T3_0.3_750m",
+"Upper_OMZ_T5_0.3_60m",
+"Mesopelagic_T5_2.7_750m",
+"Mesopelagic_T3_2.7_750m",
+"Upper_OMZ_T5_2.7_60m",
+"Lower_Oxy_T5_0.3_45m",
+"Lower_Oxy_T5_2.7_45m",
+"Upper_OMZ_T3_0.3_55m",
+"Chl_Max_T3_0.3_9m",
+"Core_OMZ_T5_2.7_250m",
+"Lower_Oxy_T3_0.3_25m",
+"Core_OMZ_T5_0.3_250m",
+"Core_OMZ_T3_0.3_250m",
+"Core_OMZ_T3_2.7_250m",
+"Chl_Max_T5_0.3_28m",
+"Upper_Oxy_T3_2.7_14m",
+"Chl_Max_T5_2.7_28m",
+"Hadal_Sed_H4_1_2cm_8063m",
+"Hadal_Sed_H3_1_2cm_7890m",
+"Hadal_Sed_H3_0_1cm_7890m",
+"Hadal_Sed_H3_2_3cm_7890m",
+"Bathyal_Sed_B04_1200m",
+"Hadal_Sed_H8_1_2cm_7734m",
+"Hadal_Sed_H4_2_3cm_8063m",
+"Bathyal_Sed_B08_539m",
+"Bathyal_Sed_B05_957m",
+"Bathyal_Sed_B07_920m",
+"Hadal_Sed_H4_0_1cm_8063m",
+"Bathyal_Sed_B12_529m",
+"Bathyal_Sed_B11_1113m",
+"Hadal_Sed_H8_0_1cm_7734m",
+"Bathyal_Sed_B22_545m",
+"Hadal_Sed_H8_2_3cm_7734m"
+))
+
+# Esta funcion es la que trabaja el color
+#cols <- colorRampPalette(brewer.pal(12, #"Accent"/"Dark2"/"Paired"/"RdBu"/"RdYlBu"/"Spectral")) # se puede usar en otro grupo
+
+cols <- colorRampPalette(brewer.pal(43, "RdBu"))
+myPal <- cols(length(unique(Other$compound)))
+#pal <- wes_palette(43, name = "Moonrise1", type = "continuous")
+
+# Alternativas
+#>  [1] "BottleRocket1"  "BottleRocket2"  "Rushmore1"      "Rushmore"      
+#>  [5] "Royal1"         "Royal2"         "Zissou1"        "Darjeeling1"   
+#>  [9] "Darjeeling2"    "Chevalier1"     "FantasticFox1"  "Moonrise1"     
+#> [13] "Moonrise2"      "Moonrise3"      "Cavalcanti1"    "GrandBudapest1"
+#> [17] "GrandBudapest2" "IsleofDogs1"    "IsleofDogs2"
+
+p <- ggplot(data=Other, aes(x=relab, y=ID, fill=compound))
+g <- p + geom_bar(aes(y=ID), stat="identity", position= "stack") + 
+  theme_bw() +
+  scale_fill_manual(values = myPal) +
+  
+  xlab("Relative abundance") + ylab(" ") +
+  theme(legend.title = element_blank(), legend.position = "right") + 
+   theme(legend.key.height = unit(0.1, "mm"))  +
+   theme(legend.key.width  = unit(5, "mm"))  +
+   theme(legend.key.size  = unit(0.1, "mm"))  +
+   theme(legend.title = element_text(size = 9), 
+               legend.text = element_text(size = 7.7)) +
+   guides(fill=guide_legend(ncol =1)) 
+g
+```
+
+```{r cars}
+Other <- subset(final_corrected, class == "Other")
+
+# NECESITO SOLO ID, compound y relab
+Other <- select(Other, ID, compound, relab) 
+Other <- dcast(Other, ID ~ compound, value.var = c("relab"))
+Other <- data.frame(Other[,-1], row.names=Other[,1])
+
+Other[is.na(Other)] <- 0 # transformar todos los NA en zeros
+
+# Compute distances and hierarchical clustering
+library(factoextra)
+# metodo elegido
+dd<- vegdist(Other, method = "bray")
+hc <- hclust(dd, method =  "average")
+
+t <- fviz_dend(hc, k = 4,            # Cut in four groups
+          cex = 0.8,  # label size
+          horiz = TRUE,               
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect_lty=1,
+          #labels_track_height = 1,
+          xlab = "",
+          ylab = "Similarity",
+          #rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          lower_rect = 0.6,
+          ggtheme = theme_classic()
+          ) + scale_x_reverse()
+t 
+```
+
+```{r cars}
+# figure_Other1<- ggarrange (t,g,
+#                     labels = c("A","B"),
+#                     ncol = 2, nrow = 1, align = "h")
+# figure_Other1
+
+library("cowplot")
+figure_Other<- ggdraw() +
+  draw_plot(t, x = 0, y = 0, width = 0.35, height = 1) +
+  draw_plot(g, x = 0.37, y = 0, width = 0.68, height = 0.97) +
+  draw_plot_label(label = c("A", "B"), size = 8,
+                  x = c(0, 0.5), y = c(1, 1))
+figure_Other
+```
+
+
+# CLUSTER WITH BOOOPSTRAP
+
+```{r cars}
+Other <- subset(final_corrected, class == "Other")
+
+# NECESITO SOLO ID, compound y relab
+Other <- select(Other, ID, compound, relab) 
+Other <- dcast(Other, ID ~ compound, value.var = c("relab"))
+Other <- data.frame(Other[,-1], row.names=Other[,1])
+
+Other[is.na(Other)] <- 0 # transformar todos los NA en zeros
+```
+
+```{r cars}
+Approximately_Unbiased <- data.frame(t(Other))
+```
+
+```{r cars}
+# Se generan solo 100 pseudo-muestras para agilizar el proceso, pero para casos
+# reales los autores no recomiendan bajar de 10000
+boot_hc_cluster <- pvclust(data = Approximately_Unbiased, method.dist = "euclidea",
+                           method.hclust = "average",
+                           nboot = 10, quiet = TRUE)
+# Al representar un objeto pvclust se obtiene el dendrograma con los valores de
+# AU-pvalue en rojo y BP-values en verde
+plot(boot_hc_cluster, cex = 0.8, print.num = FALSE, cex.pv = 0.8)
+
+# Con la función pvrect() se encuadran aquellos clusters significativos para una
+# confianza del 95%.
+pvrect(x = boot_hc_cluster, alpha = 0.95, pv = "au")
+```
+
+
+# GDGT
+
+```{r, message=FALSE}
+GDGT$ID <- factor(GDGT$ID, levels = c(
+"H08_23_7734m",
+"H08_12_7734m",
+"H08_01_7734m",
+"H04_23_8063m",
+"H04_12_8063m",
+"H04_01_8063m",
+"H03_23_7890m",
+"H03_12_7890m",
+"H03_01_7890m",
+"B04_1200m",
+"B11_1113m",
+"B05_957m",
+"B07_920m",
+"B22_545m",
+"B08_539m",
+"B12_529m",
+"Mesopelagic_T5_0.3_750m", "Mesopelagic_T5_2.7_750m",
+"Mesopelagic_T3_0.3_750m", "Mesopelagic_T3_2.7_750m",
+"Core_OMZ_T5_0.3_250m", "Core_OMZ_T5_2.7_250m",
+"Core_OMZ_T3_0.3_250m","Core_OMZ_T3_2.7_250m",
+"Upper_OMZ_T5_0.3_60m",	"Upper_OMZ_T5_2.7_60m",
+"Upper_OMZ_T3_0.3_55m", "Upper_OMZ_T3_2.7_55m",
+"Lower_Oxy_T5_0.3_45m","Lower_Oxy_T5_2.7_45m",
+"Upper_Oxy_T5_0.3_35m","Upper_Oxy_T5_2.7_35m",
+"Chl_Max_T5_0.3_28m", "Chl_Max_T5_2.7_28m",
+"Lower_Oxy_T3_0.3_25m","Lower_Oxy_T3_2.7_25m",
+"Upper_Oxy_T3_0.3_14m" , "Upper_Oxy_T3_2.7_14m",
+"Chl_Max_T3_0.3_9m", "Chl_Max_T3_2.7_9m"))
+
+p <- ggplot(data=GDGT, aes(x=relab, y=ID, fill=compound))
+g <- p + geom_bar(aes(y=ID), stat="identity", position= "stack") + 
+  #facet_wrap(~SampleType + SampleType2, scales = "free_y", nrow = 4, strip.position = "right") +
+  #facet_grid(SampleType + SampleType2~. , scales = "free_y", space = "free_y") + 
+  theme_bw() +
+scale_fill_manual(values = c("lightskyblue", "darkgreen", "deeppink", "khaki2", "firebrick", "darkorange1", "royalblue4", "darksalmon", "cyan1")) +
+  
+  xlab("Relative abundance") + ylab("") +
+  theme(legend.title = element_blank(), legend.position = "right") + 
+   theme(legend.key.height = unit(0.5, "mm"))  +
+   theme(legend.key.width  = unit(5, "mm"))  +
+   theme(legend.key.size  = unit(0.5, "mm"))  +
+   theme(legend.title = element_text(size = 9), 
+               legend.text = element_text(size = 7)) +
+   guides(fill=guide_legend(ncol =1)) +
+    
+  #theme(axis.text.x = element_text(angle = 45)) +
+  scale_y_discrete(labels=c("_04_4" = "B04 (1200 m)", "_05_2" = "B05 (957 m)", "_07_4" = "B07 (920 m)", 
+                            "_08_2" = "B08 (539 m)", "_11_4" = "B11 (1113 m)", "_12_2" = "B12 (529 m)",
+                            "_22_2" = "B22 (545 m)", 
+                            "03_01" = "H3 (7890 m)", "04_01" = "H4 (8063 m)", 
+                            "08_01" = "H8 (7734 m)",
+                            "03_12" = "H3", "04_12" = "H4", "08_12" = "H8",
+                            "03_23" = "H3", "04_23" = "H4", "08_23" = "H8"))
+g
+```
+
+```{r cars}
+GDGT <- subset(final_corrected, class == "GDGT")
+
+# NECESITO SOLO ID, compound y relab
+GDGT<- select(GDGT, ID, compound, relab) 
+GDGT <- dcast(GDGT, ID ~ compound, value.var = c("relab"))
+GDGT <- data.frame(GDGT[,-1], row.names=GDGT[,1])
+
+GDGT[is.na(GDGT)] <- 0 # transformar todos los NA en zeros
+
+# Compute distances and hierarchical clustering
+library(factoextra)
+# metodo elegido
+dd<- vegdist(GDGT, method = "bray")
+hc <- hclust(dd, method =  "average")
+
+t <- fviz_dend(hc, k = 4,            # Cut in four groups
+          cex = 0.6,  # label size
+          horiz = TRUE,               
+          k_colors = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          labels_track_height = 1,
+          color_labels_by_k = TRUE,  # color labels by groups
+          rect_lty=1,
+          #labels_track_height = 1,
+          xlab = "",
+          ylab = "Similarity",
+          #rect = TRUE,
+          rect_border = c("#2E9FDF", "#00AFBB", "#E7B800", "#FC4E07"),
+          rect_fill = TRUE,
+          lower_rect = 0.6,
+          ggtheme = theme_classic()
+          ) + scale_x_reverse()
+t 
+```
+
+```{r cars}
+# figure_GDGT1<- ggarrange (t,g,
+#                     labels = c("A","B"),
+#                     ncol = 2, nrow = 1, align = "h")
+# figure_GDGT1
+
+library("cowplot")
+figure_GDGT <- ggdraw() +
+  draw_plot(t, x = 0, y = 0, width = 0.35, height = 1) +
+  draw_plot(g, x = 0.37, y = 0, width = 0.65, height = 0.97) +
+  draw_plot_label(label = c("A", "B"), size = 8,
+                  x = c(0, 0.5), y = c(1, 1))
+figure_GDGT
+```
+
+
+# GRACIAS FIN
+
+```{r cars}
+figure_total<- ggarrange (figure_PG,figure_PE,figure_PC,figure_MGDG,figure_DGDG,figure_SQDG,figure_DGTS,figure_DGTA,figure_DGCC,
+                    labels = c("A","B","C","D","E","F","G","H","I"),
+                    ncol = 3, nrow = 3)
+figure_total
+```
+
+
+# separar por grupos de a 3
+
+```{r cars}
+figure_phospolipids<- ggarrange (figure_PG,figure_PE,figure_PC,
+                    labels = c("A","B","C"),
+                    ncol = 1, nrow = 3)
+figure_phospolipids
+```
+
+
+```{r cars}
+figure_glicolipids<- ggarrange (figure_MGDG,figure_DGDG,figure_SQDG,
+                    labels = c("A","B","C"),
+                    ncol = 1, nrow = 3)
+figure_glicolipids
+```
+
+# Betaine Lipids
+```{r cars}
+figure_Betaine<- ggarrange (figure_DGTS,figure_DGTA,figure_DGCC,
+                    labels = c("A","B","C"),
+                    ncol = 1, nrow = 3)
+figure_Betaine
+```
+
+```{r cars}
+figure_otros<- ggarrange (figure_GDGT,figure_Other, figure_PME_PDME,
+                    labels = c("A","B","C"),
+                    ncol = 1, nrow = 3)
+figure_otros
+```
+
+
+
+
+
+

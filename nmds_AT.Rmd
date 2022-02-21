@@ -1,0 +1,336 @@
+---
+title: "NMDS Project"
+author: "Edgart Flores"
+date: "8/4/2020"
+output: html_document
+---
+
+# NMDS RESUMEN DE MIS DATOS 
+# OBJETIVO: PLOTEAR LOS 3 AMBIENTES (TALUD, FOSA Y OMZ USANDO IPLs)
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(permute)
+library(dplyr)
+library(grid)
+library (lattice)
+library(vegan)
+library(tidyverse)
+``` 
+
+```{r, message=FALSE}
+#class <- read.delim("~/Documents/EF_IPL_Processing_new/data_final/09.simper_input_totals.csv", sep=",", header = #T, row.names =1) # totales
+#class1 <- read.delim("~/Documents/EF_IPL_Processing_new/data_final/10.simper_input_relab.csv", sep=",", header = #T, row.names =1)
+#class0 <- read.delim("~/Documents/EF_IPL_Processing_new/data_final/13.simper_by_clusters_relab_by_id.csv", #sep=",", header = T, row.names =1)
+#class <- read.delim("~/Documents/EF_IPL_Processing_new/data_final/13.simper_by_clusters_relab_by_id.csv", #sep=",", header = T, row.names =1)# relab
+
+class <- read.delim("~/Documents/EF_IPL_Processing_new/data_final/13.simper_by_clusters_relab_by_id_paper.csv", sep=",", header = T, row.names =1)# relab
+```
+
+# remove LA COLUMNA NA y la última fila 3_01R
+```{r, message=FALSE}
+class <- class[-1]
+```
+
+```{r cars}
+data(class)  #load the vegan package
+head(class)  # look at the first 6 rows of the data
+```
+# modifique vare.mds <- metaMDS(class, distance = "euclidean"), por defecto bray 
+# vare.mds <- metaMDS(class) ESTE ES EL ORIGINAL 
+```{r cars}
+vare.mds <- metaMDS(class, distance = "jaccard") 
+data.scores <- as.data.frame(scores(vare.mds))  #Using the scores function from vegan to extract the site scores and convert to a data.frame
+```
+
+
+```{r cars}
+# create a grouping variable that has a length of 24, the same # of rows of
+# varespec using the rep function
+grp <- rep(NA, 40)
+ind2 <- sample(1:15, nrow(class), 15)
+grp[ind2] <- "Cluster1"
+grp
+
+ind3 <- sample(16:26, nrow(class), 11)
+grp[ind3] <- "Cluster2"
+
+ind4 <- sample(27:32, nrow(class), 6)
+grp[ind4] <- "Cluster3"
+
+ind5 <- sample(33:34, nrow(class), 2)
+grp[ind5] <- "Cluster4"
+
+ind6 <- sample(35:36, nrow(class), 2)
+grp[ind6] <- "Cluster5"
+
+ind7 <- sample(37:39, nrow(class), 3)
+grp[ind7] <- "Uncluster_omz_water_column"
+
+grp[is.na(grp)] <- "Unclustered_hadal_sed"
+grp
+
+```
+
+```{r cars}
+data.scores$site <- rownames(data.scores)  # create a column of site names, from the rownames of data.scores
+data.scores$grp <- grp  #  add the grp variable created earlier
+head(data.scores)  #look at the data
+```
+
+```{r cars}
+species.scores <- as.data.frame(scores(vare.mds, "species"))  #Using the scores function from vegan to extract the species scores and convert to a data.frame
+species.scores$species <- rownames(species.scores)  # create a column of species, from the rownames of species.scores
+head(species.scores)  #look at the data
+```
+
+```{r cars}
+ggplot() + 
+  geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),alpha=0.5) +  # add the species labels
+  geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,shape=grp,colour=grp),size=4) + # add the point markers 
+  xlim(-2, 2) +
+  #geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=6,vjust=0) +  # add the site labels
+  scale_colour_manual(values=c("Cluster1" = "steelblue4", "Cluster2" = "indianred1", "Cluster3" = "darkorange", 
+                                "Cluster4" = "slategray3", "Cluster5" = "darkblue", 
+                                "Uncluster_omz_water_column" = "black", "Unclustered_hadal_sed" = "green")) +
+  coord_equal() +
+  theme_bw()
+```
+# aquí tener presente los cambios de 2 a 3 grupos o visceversa
+
+```{r cars}
+grp.a <- data.scores[data.scores$grp == "Cluster1", ][chull(data.scores[data.scores$grp == 
+    "Cluster1", c("NMDS1", "NMDS2")]), ]  # hull values for grp A
+
+grp.b <- data.scores[data.scores$grp == "Cluster2", ][chull(data.scores[data.scores$grp == 
+    "Cluster2", c("NMDS1", "NMDS2")]), ]  # hull values for grp B
+
+grp.c <- data.scores[data.scores$grp == "Cluster3", ][chull(data.scores[data.scores$grp == 
+    "Cluster3", c("NMDS1", "NMDS2")]), ]  # hull values for grp B
+
+grp.d <- data.scores[data.scores$grp == "Cluster4", ][chull(data.scores[data.scores$grp == 
+    "Cluster4", c("NMDS1", "NMDS2")]), ]  # hull values for grp A
+
+grp.e <- data.scores[data.scores$grp == "Cluster5", ][chull(data.scores[data.scores$grp == 
+    "Cluster5", c("NMDS1", "NMDS2")]), ]  # hull values for grp B
+
+grp.f <- data.scores[data.scores$grp == "Uncluster_omz_water_column", ][chull(data.scores[data.scores$grp == 
+    "Uncluster_omz_water_column", c("NMDS1", "NMDS2")]), ]  # hull values for grp B
+
+grp.f <- data.scores[data.scores$grp == "Unclustered_hadal_sed", ][chull(data.scores[data.scores$grp == 
+    "Unclustered_hadal_sed", c("NMDS1", "NMDS2")]), ]  # hull values for grp B
+
+hull.data <- rbind(grp.a, grp.b, grp.c, grp.d, grp.e, grp.f)  #combine grp.a and grp.b
+hull.data
+```
+
+
+
+```{r cars}
+ggplot() + 
+  geom_polygon(data=hull.data,aes(x=NMDS1,y=NMDS2,fill=grp,group=grp),alpha=0.5) + # add the convex hulls
+  #annotate("text", x = -2, y = 0.95, label = paste0("stress: ", format(nmds$stress, digits = 4)), hjust = 0) +
+  xlim(-2, 2) +
+  ylim(-2.5, 2.5) +
+  #geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),alpha=0.5, cex = 2) +  # add the species labels
+  geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=3.2,vjust=0, col="lightsalmon2") + 
+  geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,shape=grp,colour=grp), size=4) +
+ geom_text() +
+ # add the point markers
+  scale_colour_manual(values=c("Cluster1" = "indianred1", "Cluster2" = "steelblue4", "Cluster3" = "darkorange", 
+                                "Cluster4" = "slategray3", "Cluster5" = "darkblue", 
+                                "Uncluster_omz_water_column" = "black", "Unclustered_hadal_sed" = "cyan")) +
+  scale_fill_manual(values=c("Cluster1" = "indianred1", "Cluster2" = "steelblue4", "Cluster3" = "darkorange", 
+                                "Cluster4" = "slategray3", "Cluster5" = "darkblue", 
+                                "Uncluster_omz_water_column" = "black", "Unclustered_hadal_sed" = "cyan")) +
+  scale_shape_manual(values = c(17, 16, 17, 15, 18, 20, 18)) +
+  coord_equal() +
+  theme_bw() 
+#  theme(axis.text.x = element_blank(),  # remove x-axis text
+#        axis.text.y = element_blank(), # remove y-axis text
+#        axis.ticks = element_blank(),  # remove axis ticks
+#        axis.title.x = element_text(size=16), # remove x-axis labels
+#        axis.title.y = element_text(size=16), # remove y-axis labels
+#        panel.background = element_blank(), 
+#        panel.grid.major = element_blank(),  #remove major-grid labels
+#        panel.grid.minor = element_blank(),  #remove minor-grid labels
+#        plot.background = element_blank()) 
+#  annotate(geom="text", x=0.30, y=0.5, label="ANOSIM = 0.7802",
+#              color="black") + 
+#  annotate(geom="text", x=0.30, y=0.45, label=" p = 0,0001 ",
+#              color="black") + 
+# annotate(geom="text", x=0.30, y=0.4, label="stress = 0.158",
+#              color="black")
+```
+
+
+# P value also less than 0.05. son significativamente distintos
+# ANOSIM = An R value close to "1.0" suggests # dissimilarity between groups 
+# Stress – value representing the difference between distance in the reduced dimension compared to the complete multidimensional space
+# NMDS tries to optimize the stress as much as possible Think of optimizing stress as: “Pulling on all points a little bit so no single point is completely wrong, all points are a little off compared to distances” Ideally we want as little stress as possible 
+
+# A rule of thumb: stress > 0.05 provides an excellent representation in reduced dimensions, > 0.1 is great, >0.2 is good/ok, and stress > 0.3 provides a poor representation. 
+
+# The stress value reflects how well the ordination summarizes the observed distances among the samples. Stress increases both with the number of samples and with the
+# number of variables.
+
+#(El NMDS trata de optimizar el estrés tanto como sea posible Piensa en optimizar el estrés como: "Tirando de todos los puntos un poco para que ningún punto esté completamente equivocado, todos los puntos están un poco mal comparados con las distancias" Idealmente queremos el menor estrés posible)
+
+
+# Estrés - valor que representa la diferencia entre la distancia en la dimensión reducida en comparación con el espacio multidimensional completo
+# The goal of NMDS is to represent the original position of data in multidimensional space as accurately as possible using a reduced number of dimensions that can be easily plotted and visualized BUT (unlike PCA which uses Euclidian distances) NMDS relies on rank orders (distances) for ordination (i.e non-metric)
+
+# Specify the number of reduced dimensions you want (typically 2)
+
+# Reading NMDS plots is quite straightforward: objects that are ordinated closer to one another are likely to be more similar than those further apart. 
+# However, the scale of the axes is arbitrary as is the orientation of the plot. 
+# Solutions with higher stress values (usually above 0.20) should be interpreted with caution and those with stress above 0.30 are highly suspect.
+
+# Non-metric multidimensional scaling (NMDS) ordinations based on absolute abundance dissimilarity metrics reveal that samples are separated by environments.
+
+
+```{r cars}
+library(vegan)
+data(dune)
+data(dune.env)
+dune.dist <- vegdist(dune)
+attach(dune.env)
+dune.ano <- anosim(dune.dist, Management)
+summary(dune.ano)
+plot(dune.ano)
+```
+
+
+# prueba estadística de ANOSIM para comprar si 2 grupos son diferentes estadísticamente 
+
+```{r, message=FALSE}
+community <- read.delim("~/Documents/EF_IPL_Processing_new/data_final/02_nmds_table_by_class_anosim.csv", sep=",", header = T, row.names = 1)
+
+```
+
+```{r, message=FALSE}
+#make community matrix - extract columns with abundance information, turn data frame into matrix
+com = community[,2:ncol(community)]
+m_com = as.matrix(com)
+```
+
+```{r, message=FALSE}
+ano = anosim(m_com, community$X, distance = "bray", permutations = 9999)
+ano
+```
+ # The ANOSIM statistic compares the mean of ranked dissimilarities between groups to the mean of ranked dissimilarities within groups. An R value close to "1.0" suggests # dissimilarity between groups while an R value close to "0" suggests an even distribution of high and low ranks within and between groups. 
+ 
+ 
+ 
+ 
+ ---
+title: "NMDS Project"
+author: "Edgart Flores"
+date: "8/4/2020"
+output: html_document
+---
+
+
+```{r, message=FALSE}
+class <- read.delim("~/Documents/EF_IPL_Processing_new/data_final/09.simper_input_totals.csv", sep=",", header = T, row.names =1) # totales
+#class <- read.delim("~/Documents/EF_IPL_Processing_new/data_final/10.simper_input_relab.csv", sep=",", header = T, row.names =1) # relab
+```
+
+# remove LA COLUMNA NA y la última fila 3_01R
+```{r, message=FALSE}
+class <- class[-1:-9]
+```
+
+
+```{r cars}
+data(class)  #load the vegan package
+head(class)  # look at the first 6 rows of the data
+```
+
+```{r cars}
+vare.mds <- metaMDS(class) 
+data.scores <- as.data.frame(scores(vare.mds))  #Using the scores function from vegan to extract the site scores and convert to a data.frame
+```
+
+
+```{r cars}
+# create a grouping variable that has a length of 24, the same # of rows of
+# varespec using the rep function
+grp <- rep(NA, 40)
+ind2 <- sample(1:7, nrow(class), 7)
+grp[ind2] <- "continental slope"
+grp
+ind3 <- sample(8:16, nrow(class), 9)
+grp[ind3] <- "Inner Trench"
+
+grp[is.na(grp)] <- "Water Column"
+grp
+
+```
+
+```{r cars}
+data.scores$site <- rownames(data.scores)  # create a column of site names, from the rownames of data.scores
+data.scores$grp <- grp  #  add the grp variable created earlier
+head(data.scores)  #look at the data
+```
+
+```{r cars}
+species.scores <- as.data.frame(scores(vare.mds, "species"))  #Using the scores function from vegan to extract the species scores and convert to a data.frame
+species.scores$species <- rownames(species.scores)  # create a column of species, from the rownames of species.scores
+head(species.scores)  #look at the data
+```
+
+```{r cars}
+ggplot() + 
+  geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),alpha=0.5) +  # add the species labels
+  geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,shape=grp,colour=grp),size=4) + # add the point markers
+  #geom_text(data=data.scores,aes(x=NMDS1,y=NMDS2,label=site),size=6,vjust=0) +  # add the site labels
+  scale_colour_manual(values=c("Water Column" = "indianred1", "continental slope" = "darkorange", "Inner Trench" = "darkblue" )) +
+  coord_equal() +
+  theme_bw()
+```
+# aquí tener presente los cambios de 2 a 3 grupos o visceversa
+
+```{r cars}
+grp.a <- data.scores[data.scores$grp == "Water Column", ][chull(data.scores[data.scores$grp == 
+    "Water Column", c("NMDS1", "NMDS2")]), ]  # hull values for grp A
+
+grp.b <- data.scores[data.scores$grp == "continental slope", ][chull(data.scores[data.scores$grp == 
+    "continental slope", c("NMDS1", "NMDS2")]), ]  # hull values for grp B
+
+grp.c <- data.scores[data.scores$grp == "Inner Trench", ][chull(data.scores[data.scores$grp == 
+    "Inner Trench", c("NMDS1", "NMDS2")]), ]  # hull values for grp B
+
+hull.data <- rbind(grp.a, grp.b, grp.c)  #combine grp.a and grp.b
+hull.data
+```
+
+
+
+```{r cars}
+ggplot() + 
+  geom_polygon(data=hull.data,aes(x=NMDS1,y=NMDS2,fill=grp,group=grp),alpha=0.30) + # add the convex hulls
+  #annotate("text", x = -2, y = 0.95, label = paste0("stress: ", format(nmds$stress, digits = 4)), hjust = 0) +
+  geom_text(data=species.scores,aes(x=NMDS1,y=NMDS2,label=species),alpha=0.5, cex = 1.5) +  # add the species labels
+  geom_point(data=data.scores,aes(x=NMDS1,y=NMDS2,shape=grp,colour=grp),size=4) + # add the point markers
+  scale_colour_manual(values=c("Water Column" = "slategray3", "continental slope" = "steelblue4", "Inner Trench" = "orange")) +
+  scale_fill_manual(values=c("Water Column" = "slategray3", "continental slope" = "steelblue4", "Inner Trench" = "orange")) +
+  scale_shape_manual(values = c(20, 17, 18)) +
+  coord_equal() +
+  theme_bw() + 
+  theme(axis.text.x = element_blank(),  # remove x-axis text
+        axis.text.y = element_blank(), # remove y-axis text
+        axis.ticks = element_blank(),  # remove axis ticks
+        axis.title.x = element_text(size=18), # remove x-axis labels
+        axis.title.y = element_text(size=18), # remove y-axis labels
+        panel.background = element_blank(), 
+        panel.grid.major = element_blank(),  #remove major-grid labels
+        panel.grid.minor = element_blank(),  #remove minor-grid labels
+        plot.background = element_blank())  
+#  annotate(geom="text", x=0.30, y=0.5, label="ANOSIM = 0.7802",
+#              color="black") + 
+#  annotate(geom="text", x=0.30, y=0.45, label=" p = 0,0001 ",
+#              color="black") + 
+#  annotate(geom="text", x=0.30, y=0.4, label="stress = 0.1820",
+#              color="black")
+```
